@@ -13,11 +13,11 @@ var urls = make(map[string]string)
 
 const maxEncodedSize = 8
 
-var ErrInvalidGivenUrl = errors.New("given URL is mapped")
+var ErrInvalidGivenURL = errors.New("given URL is mapped")
 
 // Processes POST request. Sends short URL in http://localhost:8080/id format.
 //
-// Encodes given URL using base64 encoding scheme and puts it to the url's map.
+// Encodes given URL using base64 encoding scheme and puts it to the URL's map.
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
 func PostHandler(writer http.ResponseWriter, req *http.Request) {
@@ -29,14 +29,14 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 
 	if len(bodyBytes) > 0 {
 		bodyString := string(bodyBytes)
-		encodedUrl := base64.StdEncoding.EncodeToString(bodyBytes)
-		shortUrl := encodedUrl[:maxEncodedSize]
+		encodedURL := base64.StdEncoding.EncodeToString(bodyBytes)
+		shortURL := encodedURL[:maxEncodedSize]
 
-		urls[shortUrl] = bodyString
+		urls[shortURL] = bodyString
 
 		writer.Header().Set("Content-Type", "text/plain")
 		writer.WriteHeader(http.StatusCreated)
-		io.WriteString(writer, fmt.Sprintf("http://%s/%s", req.Host, shortUrl))
+		io.WriteString(writer, fmt.Sprintf("http://%s/%s", req.Host, shortURL))
 	} else {
 		IncorrectRequestHandler(writer, req, "URL is empty")
 	}
@@ -44,19 +44,19 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 
 // Processes GET request. Sends the source address at the given short address
 //
-// # Sends short URL back to the original using from the url's map
+// # Sends short URL back to the original using from the URL's map
 //
 // Returns 307 status code if processing was successfull, otherwise returns 400.
 func GetHandler(writer http.ResponseWriter, req *http.Request) {
-	shortUrl, err := processInputData(req.RequestURI)
+	shortURL, err := processInputData(req.RequestURI)
 	if err != nil {
 		IncorrectRequestHandler(writer, req, err.Error())
 		return
 	}
 
-	if decodedUrl, ok := urls[shortUrl]; ok {
+	if decodedURL, ok := urls[shortURL]; ok {
 		writer.Header().Set("Content-Type", "text/plain")
-		writer.Header().Set("Location", decodedUrl)
+		writer.Header().Set("Location", decodedURL)
 		writer.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		IncorrectRequestHandler(writer, req, "given short URL did not find in database.")
@@ -72,7 +72,7 @@ func IncorrectRequestHandler(writer http.ResponseWriter, req *http.Request, mess
 // Remove "/" prefix from the input data if length >= 2
 func processInputData(data string) (string, error) {
 	if len(data) < 2 || !strings.HasPrefix(data, "/") {
-		return "", ErrInvalidGivenUrl
+		return "", ErrInvalidGivenURL
 	}
 
 	return data[1:], nil
