@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +11,37 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/h2non/gentleman.v2"
 )
+
+const (
+	testURL = "127.0.0.1:8080"
+)
+
+func testCreateServer(t *testing.T) *httptest.Server {
+	ts := httptest.NewUnstartedServer(CreateRouter())
+	l, err := net.Listen("tcp", testURL)
+	require.NoError(t, err)
+
+	ts.Listener.Close()
+	ts.Listener = l
+
+	return ts
+}
+
+func testRequest(t *testing.T, request string) *gentleman.Response {
+	cli := gentleman.New()
+	cli.URL(testURL)
+	req := cli.Request()
+	req.Method("GET")
+	req.Path(request)
+
+	// Perform the request
+	res, err := req.Send()
+	require.NoError(t, err)
+
+	return res
+}
 
 func TestPostHandler(t *testing.T) {
 	type want struct {
@@ -84,6 +115,10 @@ func TestPostHandler(t *testing.T) {
 }
 
 func TestGetHandler(t *testing.T) {
+	ts := testCreateServer(t)
+	defer ts.Close()
+	ts.Start()
+
 	type want struct {
 		statusCode  int
 		contentType string
@@ -120,10 +155,10 @@ func TestGetHandler(t *testing.T) {
 			},
 
 			want: want{
-				statusCode:  http.StatusBadRequest,
-				contentType: "text/plain",
+				statusCode:  http.StatusMethodNotAllowed,
+				contentType: "",
 				location:    "",
-				message:     ErrInvalidGivenURL.Error(),
+				message:     "",
 			},
 		},
 		{
@@ -144,27 +179,13 @@ func TestGetHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			urls = test.urls
+		urls = test.urls
 
-			request := httptest.NewRequest(http.MethodGet, test.request, nil)
-			writer := httptest.NewRecorder()
+		res := testRequest(t, test.request)
 
-			GetHandler(writer, request)
-
-			res := writer.Result()
-
-			assert.Equal(t, test.want.statusCode, res.StatusCode)
-			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-			assert.Equal(t, test.want.location, res.Header.Get("Location"))
-
-			userResult, err := io.ReadAll(res.Body)
-			require.NoError(t, err)
-
-			err = res.Body.Close()
-			require.NoError(t, err)
-
-			assert.Equal(t, test.want.message, string(userResult))
-		})
+		assert.Equal(t, test.want.statusCode, res.StatusCode)
+		assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+		assert.Equal(t, test.want.location, res.Header.Get("Location"))
+		assert.Equal(t, test.want.message, res.String())
 	}
 }

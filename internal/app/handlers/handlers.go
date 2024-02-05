@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const (
@@ -28,14 +29,17 @@ var (
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
 func PostHandler(writer http.ResponseWriter, req *http.Request) {
+	fmt.Println("PostHandler")
 	writer.Header().Set("Content-Type", "text/plain")
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
+		fmt.Println("read error")
 		IncorrectRequestHandler(writer, req, fmt.Sprintf("cannot process URL: %s", err.Error()))
 		return
 	}
 
 	if len(bodyBytes) == 0 {
+		fmt.Println("len error")
 		IncorrectRequestHandler(writer, req, EmptyURL)
 		return
 	}
@@ -46,8 +50,11 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 
 	urls[shortURL] = bodyString
 
+	outputURL := fmt.Sprintf("http://%s/%s", req.Host, shortURL)
+	fmt.Println(outputURL)
+
 	writer.WriteHeader(http.StatusCreated)
-	io.WriteString(writer, fmt.Sprintf("http://%s/%s", req.Host, shortURL))
+	io.WriteString(writer, outputURL)
 }
 
 // Processes GET request. Sends the source address at the given short address
@@ -58,17 +65,17 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 func GetHandler(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type", "text/plain")
 
-	shortURL, err := processInputData(req.RequestURI)
-	if err != nil {
-		IncorrectRequestHandler(writer, req, err.Error())
-		return
-	}
+	shortURL := chi.URLParam(req, "url")
+	fmt.Printf("shortURL: %s\n", shortURL)
 
 	decodedURL, ok := urls[shortURL]
 	if !ok {
+		fmt.Println("GetHandler error")
 		IncorrectRequestHandler(writer, req, ShortURLNotInDB)
 		return
 	}
+
+	fmt.Printf("decodedURL: %s\n", decodedURL)
 
 	writer.Header().Set("Location", decodedURL)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
@@ -78,13 +85,4 @@ func GetHandler(writer http.ResponseWriter, req *http.Request) {
 func IncorrectRequestHandler(writer http.ResponseWriter, req *http.Request, message string) {
 	writer.WriteHeader(http.StatusBadRequest)
 	io.WriteString(writer, message)
-}
-
-// Removes "/" prefix from the input data if length >= 2
-func processInputData(data string) (string, error) {
-	if len(data) < 2 || !strings.HasPrefix(data, "/") {
-		return "", ErrInvalidGivenURL
-	}
-
-	return data[1:], nil
 }
