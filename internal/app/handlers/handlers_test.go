@@ -138,7 +138,7 @@ func TestGetHandler(t *testing.T) {
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain",
 				location:    "",
-				message:     ShortUrlNotInDb,
+				message:     ShortURLNotInDB,
 			},
 		},
 	}

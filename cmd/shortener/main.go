@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	handlers "github.com/avGenie/url-shortener/internal/app/handlers"
+	"github.com/avGenie/url-shortener/internal/app/handlers"
 )
 
 func main() {

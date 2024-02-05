@@ -19,7 +19,7 @@ var (
 	ErrInvalidGivenURL = errors.New("given URL is mapped")
 
 	EmptyURL        = "URL is empty"
-	ShortUrlNotInDb = "given short URL did not find in database"
+	ShortURLNotInDB = "given short URL did not find in database"
 )
 
 // Processes POST request. Sends short URL in http://localhost:8080/id format.
@@ -66,7 +66,7 @@ func GetHandler(writer http.ResponseWriter, req *http.Request) {
 
 	decodedURL, ok := urls[shortURL]
 	if !ok {
-		IncorrectRequestHandler(writer, req, ShortUrlNotInDb)
+		IncorrectRequestHandler(writer, req, ShortURLNotInDB)
 		return
 	}
 
