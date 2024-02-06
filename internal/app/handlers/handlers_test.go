@@ -75,7 +75,7 @@ func TestPostHandler(t *testing.T) {
 
 			want: want{
 				statusCode:  201,
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 				message:     "aHR0cHM6",
 			},
 		},
@@ -87,8 +87,8 @@ func TestPostHandler(t *testing.T) {
 
 			want: want{
 				statusCode:  400,
-				contentType: "text/plain",
-				message:     EmptyURL,
+				contentType: "text/plain; charset=utf-8",
+				message:     EmptyURL + "\n",
 			},
 		},
 	}
@@ -145,7 +145,7 @@ func TestGetHandler(t *testing.T) {
 
 			want: want{
 				statusCode:  http.StatusTemporaryRedirect,
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 				location:    "https://practicum.yandex.ru/",
 				message:     "",
 			},
@@ -175,9 +175,9 @@ func TestGetHandler(t *testing.T) {
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
-				contentType: "text/plain",
+				contentType: "text/plain; charset=utf-8",
 				location:    "",
-				message:     ShortURLNotInDB,
+				message:     ShortURLNotInDB + "\n",
 			},
 		},
 	}
