@@ -2,19 +2,22 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"path"
 
 	"os"
 	"strings"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"gopkg.in/h2non/gentleman.v2"
 	"gopkg.in/h2non/gentleman.v2/plugins/body"
 )
 
 func main() {
+	flag.Parse()
 	cli := gentleman.New()
-	cli.URL("http://localhost:8080/")
+	cli.URL(config.NetAddr)
 
 	// data := readFromConsole()
 	var data = "https://practicum.yandex.ru/"
@@ -59,6 +62,8 @@ func postRequest(cli *gentleman.Client, data string) (string, error) {
 
 	output := res.String()
 
+	fmt.Printf("output: %s\n", output)
+
 	return path.Base(output), nil
 }
 
@@ -81,5 +86,5 @@ func getRequest(cli *gentleman.Client, url string) {
 	}
 
 	// Reads the whole body and returns it as string
-	fmt.Printf("Body: %s", res.Header.Get("Location"))
+	fmt.Printf("Body: %s\n", res.Header.Get("Location"))
 }

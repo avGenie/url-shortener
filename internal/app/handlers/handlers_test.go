@@ -9,18 +9,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/h2non/gentleman.v2"
 )
 
-const (
-	testURL = "127.0.0.1:8080"
-)
-
 func testCreateServer(t *testing.T) *httptest.Server {
 	ts := httptest.NewUnstartedServer(CreateRouter())
-	l, err := net.Listen("tcp", testURL)
+	l, err := net.Listen("tcp", config.NetAddr)
 	require.NoError(t, err)
 
 	ts.Listener.Close()
@@ -31,7 +28,7 @@ func testCreateServer(t *testing.T) *httptest.Server {
 
 func testGetResponse(t *testing.T, request string) *gentleman.Response {
 	cli := gentleman.New()
-	cli.URL(testURL)
+	cli.URL(config.NetAddr)
 	req := cli.Request()
 	req.Method("GET")
 	req.Path(request)
@@ -54,8 +51,9 @@ func testPostResponse(t *testing.T, ts *httptest.Server, method, path, data stri
 }
 
 func TestPostHandler(t *testing.T) {
-	ts := httptest.NewServer(CreateRouter())
+	ts := testCreateServer(t)
 	defer ts.Close()
+	ts.Start()
 
 	type want struct {
 		statusCode  int
@@ -110,7 +108,7 @@ func TestPostHandler(t *testing.T) {
 		if test.isError {
 			assert.Equal(t, test.want.message, string(respBody))
 		} else {
-			requiredOutput := fmt.Sprintf("http://%s/%s", res.Request.URL.Host, test.want.message)
+			requiredOutput := fmt.Sprintf("%s/%s", config.BaseURIPrefix, test.want.message)
 			assert.Equal(t, requiredOutput, string(respBody))
 
 			url, ok := urls[test.want.message]

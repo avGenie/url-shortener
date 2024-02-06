@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -50,7 +51,7 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 
 	urls[shortURL] = bodyString
 
-	outputURL := fmt.Sprintf("http://%s/%s", req.Host, shortURL)
+	outputURL := fmt.Sprintf("%s/%s", config.BaseURIPrefix, shortURL)
 	fmt.Println(outputURL)
 
 	writer.WriteHeader(http.StatusCreated)
