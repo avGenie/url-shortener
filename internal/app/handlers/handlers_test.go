@@ -29,7 +29,7 @@ func testCreateServer(t *testing.T) *httptest.Server {
 	return ts
 }
 
-func testRequest(t *testing.T, request string) *gentleman.Response {
+func testGetResponse(t *testing.T, request string) *gentleman.Response {
 	cli := gentleman.New()
 	cli.URL(testURL)
 	req := cli.Request()
@@ -43,7 +43,25 @@ func testRequest(t *testing.T, request string) *gentleman.Response {
 	return res
 }
 
+func testPostResponse(t *testing.T, ts *httptest.Server,
+	method, path, data string) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(data))
+	require.NoError(t, err)
+
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
+
 func TestPostHandler(t *testing.T) {
+	ts := httptest.NewServer(CreateRouter())
+	defer ts.Close()
+
 	type want struct {
 		statusCode  int
 		contentType string
@@ -83,34 +101,21 @@ func TestPostHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
-			writer := httptest.NewRecorder()
+		res, body := testPostResponse(t, ts, "POST", test.request, test.URL)
 
-			PostHandler(writer, request)
+		assert.Equal(t, test.want.statusCode, res.StatusCode)
+		assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 
-			res := writer.Result()
+		if test.isError {
+			assert.Equal(t, test.want.message, body)
+		} else {
+			requiredOutput := fmt.Sprintf("http://%s/%s", res.Request.URL.Host, test.want.message)
+			assert.Equal(t, requiredOutput, body)
 
-			assert.Equal(t, test.want.statusCode, res.StatusCode)
-			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-
-			userResult, err := io.ReadAll(res.Body)
-			require.NoError(t, err)
-
-			err = res.Body.Close()
-			require.NoError(t, err)
-
-			if test.isError {
-				assert.Equal(t, test.want.message, string(userResult))
-			} else {
-				requiredOutput := fmt.Sprintf("http://%s/%s", request.Host, test.want.message)
-				assert.Equal(t, requiredOutput, string(userResult))
-
-				url, ok := urls[test.want.message]
-				require.True(t, ok)
-				assert.Equal(t, url, test.URL)
-			}
-		})
+			url, ok := urls[test.want.message]
+			require.True(t, ok)
+			assert.Equal(t, url, test.URL)
+		}
 	}
 }
 
@@ -181,7 +186,7 @@ func TestGetHandler(t *testing.T) {
 	for _, test := range tests {
 		urls = test.urls
 
-		res := testRequest(t, test.request)
+		res := testGetResponse(t, test.request)
 
 		assert.Equal(t, test.want.statusCode, res.StatusCode)
 		assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
