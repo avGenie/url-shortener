@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"path"
 
@@ -15,9 +14,10 @@ import (
 )
 
 func main() {
-	flag.Parse()
+	config.ParseConfig()
+
 	cli := gentleman.New()
-	cli.URL(config.NetAddr)
+	cli.URL(config.Config.NetAddr)
 
 	// data := readFromConsole()
 	var data = "https://practicum.yandex.ru/"

@@ -47,7 +47,7 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 
 	urls[shortURL] = bodyString
 
-	outputURL := fmt.Sprintf("%s/%s", config.BaseURIPrefix, shortURL)
+	outputURL := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, shortURL)
 	fmt.Println(outputURL)
 
 	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")

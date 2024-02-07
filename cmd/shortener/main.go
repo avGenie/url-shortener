@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
@@ -9,8 +8,9 @@ import (
 )
 
 func main() {
-	flag.Parse()
-	err := http.ListenAndServe(config.NetAddr, handlers.CreateRouter())
+	config.ParseConfig()
+
+	err := http.ListenAndServe(config.Config.NetAddr, handlers.CreateRouter())
 	if err != nil {
 		panic(err.Error())
 	}

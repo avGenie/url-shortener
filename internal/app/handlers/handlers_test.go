@@ -17,7 +17,7 @@ import (
 
 func testCreateServer(t *testing.T) *httptest.Server {
 	ts := httptest.NewUnstartedServer(CreateRouter())
-	l, err := net.Listen("tcp", config.NetAddr)
+	l, err := net.Listen("tcp", config.Config.NetAddr)
 	require.NoError(t, err)
 
 	ts.Listener.Close()
@@ -28,7 +28,7 @@ func testCreateServer(t *testing.T) *httptest.Server {
 
 func testGetResponse(t *testing.T, request string) *gentleman.Response {
 	cli := gentleman.New()
-	cli.URL(config.NetAddr)
+	cli.URL(config.Config.NetAddr)
 	req := cli.Request()
 	req.Method("GET")
 	req.Path(request)
@@ -108,7 +108,7 @@ func TestPostHandler(t *testing.T) {
 		if test.isError {
 			assert.Equal(t, test.want.message, string(respBody))
 		} else {
-			requiredOutput := fmt.Sprintf("%s/%s", config.BaseURIPrefix, test.want.message)
+			requiredOutput := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, test.want.message)
 			assert.Equal(t, requiredOutput, string(respBody))
 
 			url, ok := urls[test.want.message]
