@@ -2,31 +2,35 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"path"
 
 	"os"
 	"strings"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
-	"gopkg.in/h2non/gentleman.v2"
-	"gopkg.in/h2non/gentleman.v2/plugins/body"
 )
 
 func main() {
 	config.ParseConfig()
 
-	cli := gentleman.New()
-	cli.URL(config.Config.NetAddr)
-
-	// data := readFromConsole()
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	var data = "https://practicum.yandex.ru/"
-	url, err := postRequest(cli, data)
+	url, err := postRequest(client, data)
 	if err != nil {
+		log.Println("Post request error: : %w", err)
 		panic(err)
 	}
 
-	getRequest(cli, url)
+	getRequest(client, url)
 }
 
 func readFromConsole() string {
@@ -44,47 +48,45 @@ func readFromConsole() string {
 	return data
 }
 
-func postRequest(cli *gentleman.Client, data string) (string, error) {
-	req := cli.Request()
-	req.Method("POST")
-	req.Use(body.String(data))
-
-	// Perform the request
-	res, err := req.Send()
+func postRequest(client *http.Client, data string) (string, error) {
+	fmt.Println("Post request")
+	url := fmt.Sprintf("http://%s", config.Config.NetAddr)
+	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(data)))
 	if err != nil {
-		fmt.Printf("Request error: %s\n", err)
-		return "", fmt.Errorf("request error")
-	}
-	if !res.Ok {
-		fmt.Printf("Invalid server response: %d\n", res.StatusCode)
-		return "", fmt.Errorf("request error")
+		return "", err
 	}
 
-	output := res.String()
+	response, err := client.Do(request)
+	if err != nil {
+		return "", err
+	}
 
-	fmt.Printf("output: %s\n", output)
+	bodyBytes, err := io.ReadAll(response.Body)
+	defer response.Body.Close()
 
-	return path.Base(output), nil
+	if err != nil {
+		return "", err
+	}
+
+	log.Println("Post request output: ", string(bodyBytes))
+
+	return path.Base(string(bodyBytes)), nil
 }
 
-func getRequest(cli *gentleman.Client, url string) {
-	fmt.Printf("Input url: %s\n", url)
-
-	req := cli.Request()
-	req.Method("GET")
-	req.Path(fmt.Sprintf("/%s", url))
-
-	// Perform the request
-	res, err := req.Send()
+func getRequest(client *http.Client, url string) {
+	requestURL := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, url)
+	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
-		fmt.Printf("Request error: %s\n", err)
-		return
-	}
-	if !res.Ok {
-		fmt.Printf("Invalid server response: %d\n", res.StatusCode)
+		log.Println("Request has not been created: %w", err)
 		return
 	}
 
-	// Reads the whole body and returns it as string
-	fmt.Printf("Body: %s\n", res.Header.Get("Location"))
+	response, err := client.Do(request)
+	if err != nil {
+		log.Println("Request has not been sent: %w", err)
+		return
+	}
+	defer response.Body.Close()
+
+	log.Println("Output location: ", response.Header.Get("Location"))
 }
