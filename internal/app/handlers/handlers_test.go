@@ -128,9 +128,9 @@ func TestGetHandler(t *testing.T) {
 
 			want: want{
 				statusCode:  http.StatusTemporaryRedirect,
-				contentType: "text/html; charset=utf-8",
+				contentType: "text/plain; charset=utf-8",
 				location:    "https://practicum.yandex.ru/",
-				message:     "<a href=\"https://practicum.yandex.ru/\">Temporary Redirect</a>.\n\n",
+				message:     "",
 			},
 		},
 		{
