@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,32 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testCreateServer(t *testing.T) *httptest.Server {
-	ts := httptest.NewUnstartedServer(CreateRouter())
-	l, err := net.Listen("tcp", config.Config.NetAddr)
-	require.NoError(t, err)
-
-	ts.Listener.Close()
-	ts.Listener = l
-
-	return ts
-}
-
-func testPostResponse(t *testing.T, ts *httptest.Server, method, path, data string) *http.Response {
-	req, err := http.NewRequest(method, ts.URL+path, strings.NewReader(data))
-	require.NoError(t, err)
-
-	resp, err := ts.Client().Do(req)
-	require.NoError(t, err)
-
-	return resp
-}
-
 func TestPostHandler(t *testing.T) {
-	ts := testCreateServer(t)
-	defer ts.Close()
-	ts.Start()
-
 	type want struct {
 		statusCode  int
 		contentType string
@@ -81,27 +55,34 @@ func TestPostHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res := testPostResponse(t, ts, "POST", test.request, test.URL)
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
+			writer := httptest.NewRecorder()
 
-		respBody, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
+			PostHandler(writer, request)
 
-		err = res.Body.Close()
-		require.NoError(t, err)
+			res := writer.Result()
 
-		assert.Equal(t, test.want.statusCode, res.StatusCode)
-		assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+			assert.Equal(t, test.want.statusCode, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 
-		if test.isError {
-			assert.Equal(t, test.want.message, string(respBody))
-		} else {
-			requiredOutput := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, test.want.message)
-			assert.Equal(t, requiredOutput, string(respBody))
+			userResult, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
 
-			url, ok := urls[test.want.message]
-			require.True(t, ok)
-			assert.Equal(t, url, test.URL)
-		}
+			err = res.Body.Close()
+			require.NoError(t, err)
+
+			if test.isError {
+				assert.Equal(t, test.want.message, string(userResult))
+			} else {
+				requiredOutput := fmt.Sprintf("http://%s/%s", config.Config.NetAddr, test.want.message)
+				assert.Equal(t, requiredOutput, string(userResult))
+
+				url, ok := urls[test.want.message]
+				require.True(t, ok)
+				assert.Equal(t, url, test.URL)
+			}
+		})
 	}
 }
 
@@ -177,8 +158,7 @@ func TestGetHandler(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			handler := http.HandlerFunc(GetHandler)
-			handler.ServeHTTP(writer, request)
+			GetHandler(writer, request)
 
 			res := writer.Result()
 
