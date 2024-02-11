@@ -78,7 +78,7 @@ func TestPostHandler(t *testing.T) {
 				requiredOutput := fmt.Sprintf("http://%s/%s", config.Config.NetAddr, test.want.message)
 				assert.Equal(t, requiredOutput, string(userResult))
 
-				url, ok := urls[test.want.message]
+				url, ok := urls.Get(test.want.message)
 				require.True(t, ok)
 				assert.Equal(t, url, test.URL)
 			}
@@ -148,7 +148,9 @@ func TestGetHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			urls = test.urls
+			for key, value := range test.urls {
+				urls.Add(key, value)
+			}
 
 			request := httptest.NewRequest(http.MethodGet, "/{url}", nil)
 			writer := httptest.NewRecorder()

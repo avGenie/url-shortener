@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/avGenie/url-shortener/internal/app/storage"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -16,7 +17,7 @@ const (
 )
 
 var (
-	urls = make(map[string]string)
+	urls = storage.NewUrl()
 
 	EmptyURL        = "URL is empty"
 	ShortURLNotInDB = "given short URL did not find in database"
@@ -45,7 +46,7 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 	encodedURL := base64.StdEncoding.EncodeToString(bodyBytes)
 	shortURL := encodedURL[:maxEncodedSize]
 
-	urls[shortURL] = bodyString
+	urls.Add(shortURL, bodyString)
 
 	outputURL := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, shortURL)
 
@@ -63,7 +64,7 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 // Returns 307 status code if processing was successfull, otherwise returns 400.
 func GetHandler(writer http.ResponseWriter, req *http.Request) {
 	shortURL := chi.URLParam(req, "url")
-	decodedURL, ok := urls[shortURL]
+	decodedURL, ok := urls.Get(shortURL)
 	if !ok {
 		http.Error(writer, ShortURLNotInDB, http.StatusBadRequest)
 		return
