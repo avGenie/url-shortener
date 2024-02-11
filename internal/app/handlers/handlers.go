@@ -29,7 +29,9 @@ var (
 // Returns 201 status code if processing was successfull, otherwise returns 400.
 func PostHandler(writer http.ResponseWriter, req *http.Request) {
 	bodyBytes, err := io.ReadAll(req.Body)
-		if err != nil {
+	defer req.Body.Close()
+
+	if err != nil {
 		http.Error(writer, fmt.Sprintf("cannot process URL: %s", err.Error()), http.StatusBadRequest)
 		return
 	}

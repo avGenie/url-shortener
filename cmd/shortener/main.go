@@ -11,7 +11,7 @@ func main() {
 	config.ParseConfig()
 
 	err := http.ListenAndServe(config.Config.NetAddr, handlers.CreateRouter())
-	if err != nil {
+	if err != nil && err != http.ErrServerClosed {
 		panic(err.Error())
 	}
 }
