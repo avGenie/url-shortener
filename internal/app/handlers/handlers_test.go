@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -10,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/h2non/gentleman.v2"
 )
 
 func testCreateServer(t *testing.T) *httptest.Server {
@@ -24,20 +25,6 @@ func testCreateServer(t *testing.T) *httptest.Server {
 	ts.Listener = l
 
 	return ts
-}
-
-func testGetResponse(t *testing.T, request string) *gentleman.Response {
-	cli := gentleman.New()
-	cli.URL(config.Config.NetAddr)
-	req := cli.Request()
-	req.Method("GET")
-	req.Path(request)
-
-	// Perform the request
-	res, err := req.Send()
-	require.NoError(t, err)
-
-	return res
 }
 
 func testPostResponse(t *testing.T, ts *httptest.Server, method, path, data string) *http.Response {
@@ -119,10 +106,6 @@ func TestPostHandler(t *testing.T) {
 }
 
 func TestGetHandler(t *testing.T) {
-	ts := testCreateServer(t)
-	defer ts.Close()
-	ts.Start()
-
 	type want struct {
 		statusCode  int
 		contentType string
@@ -137,7 +120,7 @@ func TestGetHandler(t *testing.T) {
 	}{
 		{
 			name:    "correct input data",
-			request: "/aHR0cHM6",
+			request: "aHR0cHM6",
 
 			urls: map[string]string{
 				"aHR0cHM6": "https://practicum.yandex.ru/",
@@ -145,24 +128,24 @@ func TestGetHandler(t *testing.T) {
 
 			want: want{
 				statusCode:  http.StatusTemporaryRedirect,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "text/html; charset=utf-8",
 				location:    "https://practicum.yandex.ru/",
-				message:     "",
+				message:     "<a href=\"https://practicum.yandex.ru/\">Temporary Redirect</a>.\n\n",
 			},
 		},
 		{
 			name:    "request without id",
-			request: "/",
+			request: "",
 
 			urls: map[string]string{
 				"aHR0cHM6": "https://practicum.yandex.ru/",
 			},
 
 			want: want{
-				statusCode:  http.StatusMethodNotAllowed,
-				contentType: "",
+				statusCode:  http.StatusBadRequest,
+				contentType: "text/plain; charset=utf-8",
 				location:    "",
-				message:     "",
+				message:     ShortURLNotInDB + "\n",
 			},
 		},
 		{
@@ -183,13 +166,33 @@ func TestGetHandler(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		urls = test.urls
+		t.Run(test.name, func(t *testing.T) {
+			urls = test.urls
 
-		res := testGetResponse(t, test.request)
+			request := httptest.NewRequest(http.MethodGet, "/{url}", nil)
+			writer := httptest.NewRecorder()
 
-		assert.Equal(t, test.want.statusCode, res.StatusCode)
-		assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
-		assert.Equal(t, test.want.location, res.Header.Get("Location"))
-		assert.Equal(t, test.want.message, res.String())
+			rctx := chi.NewRouteContext()
+			rctx.URLParams.Add("url", test.request)
+
+			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+
+			handler := http.HandlerFunc(GetHandler)
+			handler.ServeHTTP(writer, request)
+
+			res := writer.Result()
+
+			assert.Equal(t, test.want.statusCode, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+			assert.Equal(t, test.want.location, res.Header.Get("Location"))
+
+			userResult, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			err = res.Body.Close()
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want.message, string(userResult))
+		})
 	}
 }
