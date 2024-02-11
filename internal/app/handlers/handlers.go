@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
@@ -27,16 +28,13 @@ var (
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
 func PostHandler(writer http.ResponseWriter, req *http.Request) {
-	fmt.Println("PostHandler")
 	bodyBytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		fmt.Println("read error")
+		if err != nil {
 		http.Error(writer, fmt.Sprintf("cannot process URL: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 
 	if len(bodyBytes) == 0 {
-		fmt.Println("len error")
 		http.Error(writer, EmptyURL, http.StatusBadRequest)
 		return
 	}
@@ -48,7 +46,8 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 	urls[shortURL] = bodyString
 
 	outputURL := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, shortURL)
-	fmt.Println(outputURL)
+
+	log.Println("Created URL: ", outputURL)
 
 	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	writer.WriteHeader(http.StatusCreated)
@@ -62,16 +61,13 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 // Returns 307 status code if processing was successfull, otherwise returns 400.
 func GetHandler(writer http.ResponseWriter, req *http.Request) {
 	shortURL := chi.URLParam(req, "url")
-	fmt.Printf("shortURL: %s\n", shortURL)
-
 	decodedURL, ok := urls[shortURL]
 	if !ok {
-		fmt.Println("GetHandler error")
 		http.Error(writer, ShortURLNotInDB, http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("decodedURL: %s\n", decodedURL)
+	log.Println("Decoded URL: ", decodedURL)
 
 	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	writer.Header().Set("Location", decodedURL)
