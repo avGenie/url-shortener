@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	urls = storage.NewUrl()
+	urls = storage.NewURLStorage()
 
 	EmptyURL        = "URL is empty"
 	ShortURLNotInDB = "given short URL did not find in database"
