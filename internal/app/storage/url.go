@@ -2,7 +2,7 @@ package storage
 
 import "sync"
 
-// A thread-safe map wich contains Add and Get methods
+// A thread-safe map which contains Add and Get methods
 type Url struct {
 	mutex sync.RWMutex
 	urls  map[string]string

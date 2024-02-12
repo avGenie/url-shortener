@@ -8,9 +8,9 @@ import (
 )
 
 func main() {
-	config.ParseConfig()
+	cnf := config.InitConfig()
 
-	err := http.ListenAndServe(config.Config.NetAddr, handlers.CreateRouter())
+	err := http.ListenAndServe(cnf.NetAddr, handlers.CreateRouter(cnf))
 	if err != nil && err != http.ErrServerClosed {
 		panic(err.Error())
 	}

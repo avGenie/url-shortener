@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/storage"
 	"github.com/go-chi/chi/v5"
 )
@@ -28,7 +27,7 @@ var (
 // Encodes given URL using base64 encoding scheme and puts it to the URL's map.
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
-func PostHandler(writer http.ResponseWriter, req *http.Request) {
+func PostHandler(baseURIPrefix string, writer http.ResponseWriter, req *http.Request) {
 	bodyBytes, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
@@ -48,7 +47,7 @@ func PostHandler(writer http.ResponseWriter, req *http.Request) {
 
 	urls.Add(shortURL, bodyString)
 
-	outputURL := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, shortURL)
+	outputURL := fmt.Sprintf("%s/%s", baseURIPrefix, shortURL)
 
 	log.Println("Created URL: ", outputURL)
 

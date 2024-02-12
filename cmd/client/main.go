@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	config.ParseConfig()
+	cnf := config.InitConfig()
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -24,13 +24,13 @@ func main() {
 		},
 	}
 	var data = "https://practicum.yandex.ru/"
-	url, err := postRequest(client, data)
+	url, err := postRequest(client, data, cnf.NetAddr)
 	if err != nil {
 		log.Println("Post request error: : %w", err)
 		panic(err)
 	}
 
-	getRequest(client, url)
+	getRequest(client, url, cnf.BaseURIPrefix)
 }
 
 func readFromConsole() string {
@@ -48,9 +48,8 @@ func readFromConsole() string {
 	return data
 }
 
-func postRequest(client *http.Client, data string) (string, error) {
-	fmt.Println("Post request")
-	url := fmt.Sprintf("http://%s", config.Config.NetAddr)
+func postRequest(client *http.Client, data, netAddr string) (string, error) {
+	url := fmt.Sprintf("http://%s", netAddr)
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(data)))
 	if err != nil {
 		return "", err
@@ -73,8 +72,8 @@ func postRequest(client *http.Client, data string) (string, error) {
 	return path.Base(string(bodyBytes)), nil
 }
 
-func getRequest(client *http.Client, url string) {
-	requestURL := fmt.Sprintf("%s/%s", config.Config.BaseURIPrefix, url)
+func getRequest(client *http.Client, url, baseURIPrefix string) {
+	requestURL := fmt.Sprintf("%s/%s", baseURIPrefix, url)
 	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
 		log.Println("Request has not been created: %w", err)

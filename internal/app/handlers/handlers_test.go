@@ -16,6 +16,8 @@ import (
 )
 
 func TestPostHandler(t *testing.T) {
+	config := config.InitConfig()
+
 	type want struct {
 		statusCode  int
 		contentType string
@@ -59,7 +61,7 @@ func TestPostHandler(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
 			writer := httptest.NewRecorder()
 
-			PostHandler(writer, request)
+			PostHandler(config.BaseURIPrefix, writer, request)
 
 			res := writer.Result()
 
@@ -75,7 +77,7 @@ func TestPostHandler(t *testing.T) {
 			if test.isError {
 				assert.Equal(t, test.want.message, string(userResult))
 			} else {
-				requiredOutput := fmt.Sprintf("http://%s/%s", config.Config.NetAddr, test.want.message)
+				requiredOutput := fmt.Sprintf("http://%s/%s", config.NetAddr, test.want.message)
 				assert.Equal(t, requiredOutput, string(userResult))
 
 				url, ok := urls.Get(test.want.message)
