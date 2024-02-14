@@ -76,14 +76,15 @@ func TestPostHandler(t *testing.T) {
 
 			if test.isError {
 				assert.Equal(t, test.want.message, string(userResult))
-			} else {
-				requiredOutput := fmt.Sprintf("http://%s/%s", config.NetAddr, test.want.message)
-				assert.Equal(t, requiredOutput, string(userResult))
-
-				url, ok := urls.Get(test.want.message)
-				require.True(t, ok)
-				assert.Equal(t, url, test.URL)
+				return
 			}
+
+			requiredOutput := fmt.Sprintf("http://%s/%s", config.NetAddr, test.want.message)
+			assert.Equal(t, requiredOutput, string(userResult))
+
+			url, ok := urls.Get(test.want.message)
+			require.True(t, ok)
+			assert.Equal(t, url, test.URL)
 		})
 	}
 }
