@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,9 +83,9 @@ func TestPostHandler(t *testing.T) {
 			requiredOutput := fmt.Sprintf("http://%s/%s", config.NetAddr, test.want.message)
 			assert.Equal(t, requiredOutput, string(userResult))
 
-			url, ok := urls.Get(test.want.message)
+			url, ok := urls.Get(*entity.ParseURL(test.want.message))
 			require.True(t, ok)
-			assert.Equal(t, url, test.URL)
+			assert.Equal(t, url.String(), test.URL)
 		})
 	}
 }
@@ -99,15 +100,15 @@ func TestGetHandler(t *testing.T) {
 	tests := []struct {
 		name    string
 		request string
-		urls    map[string]string
+		urls    map[entity.URL]entity.URL
 		want    want
 	}{
 		{
 			name:    "correct input data",
 			request: "aHR0cHM6",
 
-			urls: map[string]string{
-				"aHR0cHM6": "https://practicum.yandex.ru/",
+			urls: map[entity.URL]entity.URL{
+				*entity.ParseURL("aHR0cHM6"): *entity.ParseURL("https://practicum.yandex.ru/"),
 			},
 
 			want: want{
@@ -121,8 +122,8 @@ func TestGetHandler(t *testing.T) {
 			name:    "request without id",
 			request: "",
 
-			urls: map[string]string{
-				"aHR0cHM6": "https://practicum.yandex.ru/",
+			urls: map[entity.URL]entity.URL{
+				*entity.ParseURL("aHR0cHM6"): *entity.ParseURL("https://practicum.yandex.ru/"),
 			},
 
 			want: want{
@@ -136,8 +137,8 @@ func TestGetHandler(t *testing.T) {
 			name:    "missing URL",
 			request: "/fsdfuytu",
 
-			urls: map[string]string{
-				"aHR0cHM6": "https://practicum.yandex.ru/",
+			urls: map[entity.URL]entity.URL{
+				*entity.ParseURL("aHR0cHM6"): *entity.ParseURL("https://practicum.yandex.ru/"),
 			},
 
 			want: want{
