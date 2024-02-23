@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/storage"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 const (
@@ -35,16 +36,19 @@ func PostHandler(baseURIPrefix string, writer http.ResponseWriter, req *http.Req
 	defer req.Body.Close()
 
 	if err != nil {
+		logger.Log.Error(CannotProcessURL, zap.Error(err))
 		http.Error(writer, CannotProcessURL, http.StatusBadRequest)
 		return
 	}
 
 	if len(userURL) == 0 {
+		logger.Log.Error(EmptyURL, zap.Error(err))
 		http.Error(writer, EmptyURL, http.StatusBadRequest)
 		return
 	}
 
 	if ok := entity.IsValidURL(string(userURL)); !ok {
+		logger.Log.Error(WrongURLFormat, zap.Error(err))
 		http.Error(writer, WrongURLFormat, http.StatusBadRequest)
 		return
 	}
@@ -56,7 +60,7 @@ func PostHandler(baseURIPrefix string, writer http.ResponseWriter, req *http.Req
 
 	outputURL := fmt.Sprintf("%s/%s", baseURIPrefix, shortURL)
 
-	log.Println("Created URL: ", outputURL)
+	logger.Log.Info("url has been created succeessfully", zap.String("output url", outputURL))
 
 	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	writer.WriteHeader(http.StatusCreated)
@@ -73,11 +77,12 @@ func GetHandler(writer http.ResponseWriter, req *http.Request) {
 	decodedURL, ok := urls.Get(*entity.ParseURL(shortURL))
 
 	if !ok {
+		logger.Log.Error(ShortURLNotInDB)
 		http.Error(writer, ShortURLNotInDB, http.StatusBadRequest)
 		return
 	}
 
-	log.Println("Decoded URL: ", decodedURL)
+	logger.Log.Info("url has been decoded succeessfully", zap.String("decoded url", decodedURL.String()))
 
 	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	writer.Header().Set("Location", decodedURL.String())
