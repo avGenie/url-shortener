@@ -51,7 +51,7 @@ func PostHandlerURL(writer http.ResponseWriter, req *http.Request) {
 	baseURIPrefix := req.Context().Value(baseURIPrefixCtx).(string)
 	if baseURIPrefix == "" {
 		logger.Log.Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
-		http.Error(writer, "internal server error", http.StatusInternalServerError)
+		http.Error(writer, InternalServerError, http.StatusInternalServerError)
 		return
 	}
 
@@ -84,7 +84,7 @@ func PostHandlerJSON(writer http.ResponseWriter, req *http.Request) {
 	baseURIPrefix := req.Context().Value(baseURIPrefixCtx).(string)
 	if baseURIPrefix == "" {
 		logger.Log.Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
-		http.Error(writer, "internal server error", http.StatusInternalServerError)
+		http.Error(writer, InternalServerError, http.StatusInternalServerError)
 		return
 	}
 
@@ -94,6 +94,7 @@ func PostHandlerJSON(writer http.ResponseWriter, req *http.Request) {
 	logger.Log.Info("url has been created succeessfully", zap.String("output url", response.URL))
 
 	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusCreated)
 	if err = json.NewEncoder(writer).Encode(response); err != nil {
 		logger.Log.Error("invalid response", zap.Any("response", response))
 		http.Error(writer, "internal server error", http.StatusInternalServerError)
