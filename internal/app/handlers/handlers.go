@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/storage"
@@ -13,8 +15,12 @@ import (
 	"go.uber.org/zap"
 )
 
+type favContextKey string
+
 const (
 	maxEncodedSize = 8
+
+	baseURIPrefixCtx = favContextKey("baseURIPrefix")
 )
 
 var (
@@ -26,13 +32,23 @@ var (
 	CannotProcessURL = "cannot process URL"
 )
 
+func PostMiddleware(config config.Config, h http.HandlerFunc) http.HandlerFunc {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		r = r.WithContext(context.WithValue(r.Context(), baseURIPrefixCtx, config.BaseURIPrefix))
+
+		h.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(logFn)
+}
+
 // Processes POST request. Sends short URL in http://localhost:8080/id format.
 //
 // Encodes given URL using base64 encoding scheme and puts it to the URL's map.
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
-func PostHandler(baseURIPrefix string, writer http.ResponseWriter, req *http.Request) {
-	userURL, err := io.ReadAll(req.Body)
+func PostHandlerURL(writer http.ResponseWriter, req *http.Request) {
+	inputURL, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -41,22 +57,25 @@ func PostHandler(baseURIPrefix string, writer http.ResponseWriter, req *http.Req
 		return
 	}
 
-	if len(userURL) == 0 {
-		logger.Log.Error(EmptyURL, zap.Error(err))
-		http.Error(writer, EmptyURL, http.StatusBadRequest)
-		return
-	}
-
-	if ok := entity.IsValidURL(string(userURL)); !ok {
+	if ok := entity.IsValidURL(inputURL); !ok {
 		logger.Log.Error(WrongURLFormat, zap.Error(err))
 		http.Error(writer, WrongURLFormat, http.StatusBadRequest)
 		return
 	}
 
-	encodedURL := base64.StdEncoding.EncodeToString(userURL)
-	shortURL := encodedURL[:maxEncodedSize]
+	baseURIPrefix := req.Context().Value(baseURIPrefixCtx).(string)
+	if baseURIPrefix == "" {
+		logger.Log.Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
+		http.Error(writer, "internal error", http.StatusInternalServerError)
+		return
+	}
 
-	urls.Add(*entity.ParseURL(shortURL), *entity.ParseURL(string(userURL)))
+	userURL := entity.ParseURL(string(inputURL))
+
+	encodedURL := base64.StdEncoding.EncodeToString(inputURL)
+	shortURL := entity.ParseURL(encodedURL[:maxEncodedSize])
+
+	urls.Add(*shortURL, *userURL)
 
 	outputURL := fmt.Sprintf("%s/%s", baseURIPrefix, shortURL)
 
