@@ -10,6 +10,7 @@ func CreateRouter(config config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Post("/", logger.RequestLogger(PostMiddleware(config, PostHandlerURL)))
+	r.Post("/api/shorten", logger.RequestLogger(PostMiddleware(config, PostHandlerJSON)))
 
 	r.Get("/{url}", logger.RequestLogger(GetHandler))
 

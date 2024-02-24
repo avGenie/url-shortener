@@ -38,12 +38,12 @@ func ParseURL(inputURL string) *URL {
 }
 
 // Validates URL
-func IsValidURL(inputURL []byte) bool {
+func IsValidURL(inputURL string) bool {
 	if len(inputURL) == 0 {
 		return false
 	}
 
-	u, err := url.ParseRequestURI(string(inputURL))
+	u, err := url.ParseRequestURI(inputURL)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return false
 	}

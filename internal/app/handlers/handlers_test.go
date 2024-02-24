@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPostHandler(t *testing.T) {
+func TestPostHandlerURL(t *testing.T) {
 	config := config.InitConfig()
 
 	type want struct {
@@ -52,7 +52,7 @@ func TestPostHandler(t *testing.T) {
 			want: want{
 				statusCode:  400,
 				contentType: "text/plain; charset=utf-8",
-				message:     EmptyURL + "\n",
+				message:     WrongURLFormat + "\n",
 			},
 		},
 	}
@@ -62,7 +62,10 @@ func TestPostHandler(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
 			writer := httptest.NewRecorder()
 
-			PostHandler(config.BaseURIPrefix, writer, request)
+			ctx := context.WithValue(request.Context(), baseURIPrefixCtx, config.BaseURIPrefix)
+			request = request.WithContext(ctx)
+
+			PostHandlerURL(writer, request)
 
 			res := writer.Result()
 
