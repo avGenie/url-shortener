@@ -9,16 +9,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPostHandlerURL(t *testing.T) {
-	config := config.InitConfig()
+const (
+	baseURIPrefix = "http://localhost:8080"
+	netAddr = "localhost:8080"
+)
 
+func TestPostHandlerURL(t *testing.T) {
 	type want struct {
 		statusCode  int
 		contentType string
@@ -36,7 +38,7 @@ func TestPostHandlerURL(t *testing.T) {
 			name:          "correct input data",
 			request:       "/",
 			URL:           "https://practicum.yandex.ru/",
-			baseURIPrefix: config.BaseURIPrefix,
+			baseURIPrefix: baseURIPrefix,
 			isError:       false,
 
 			want: want{
@@ -48,7 +50,7 @@ func TestPostHandlerURL(t *testing.T) {
 		{
 			name:          "empty URL",
 			request:       "/",
-			baseURIPrefix: config.BaseURIPrefix,
+			baseURIPrefix: baseURIPrefix,
 			isError:       true,
 
 			want: want{
@@ -97,7 +99,7 @@ func TestPostHandlerURL(t *testing.T) {
 				return
 			}
 
-			requiredOutput := fmt.Sprintf("http://%s/%s", config.NetAddr, test.want.message)
+			requiredOutput := fmt.Sprintf("http://%s/%s", netAddr, test.want.message)
 			assert.Equal(t, requiredOutput, string(userResult))
 
 			url, ok := urls.Get(*entity.ParseURL(test.want.message))
@@ -108,8 +110,6 @@ func TestPostHandlerURL(t *testing.T) {
 }
 
 func TestPostHandlerJSON(t *testing.T) {
-	config := config.InitConfig()
-
 	type want struct {
 		statusCode   int
 		contentType  string
@@ -129,7 +129,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			name:          "correct input data",
 			request:       "/",
 			body:          `{"url":"https://practicum.yandex.ru/"}`,
-			baseURIPrefix: config.BaseURIPrefix,
+			baseURIPrefix: baseURIPrefix,
 			urlsKey:       "aHR0cHM6",
 			isError:       false,
 
@@ -144,7 +144,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			name:          "empty URL",
 			request:       "/",
 			body:          `{"url": ""}`,
-			baseURIPrefix: config.BaseURIPrefix,
+			baseURIPrefix: baseURIPrefix,
 			isError:       true,
 
 			want: want{
