@@ -29,7 +29,7 @@ func Initialize(config config.Config) error {
 	return nil
 }
 
-func RequestLogger(h http.HandlerFunc) http.HandlerFunc {
+func LoggerMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 

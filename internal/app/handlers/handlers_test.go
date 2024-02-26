@@ -17,7 +17,7 @@ import (
 
 const (
 	baseURIPrefix = "http://localhost:8080"
-	netAddr = "localhost:8080"
+	netAddr       = "localhost:8080"
 )
 
 func TestPostHandlerURL(t *testing.T) {
@@ -201,7 +201,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want.expectedBody, string(userResult))
-			
+
 			if test.isError {
 				return
 			}
