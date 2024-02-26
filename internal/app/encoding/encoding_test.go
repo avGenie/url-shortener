@@ -8,8 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/avGenie/url-shortener/internal/app/config"
-	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,11 +22,8 @@ func webhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGzipCompression(t *testing.T) {
-	cnf := config.InitConfig()
-	_ = logger.Initialize(cnf)
-
 	finalHandler := http.HandlerFunc(webhook)
-	srv := httptest.NewServer(logger.LoggerMiddleware(GzipMiddleware(finalHandler)))
+	srv := httptest.NewServer(GzipMiddleware(finalHandler))
 	defer srv.Close()
 
 	t.Run("sends_gzip", func(t *testing.T) {
