@@ -12,12 +12,22 @@ const (
 	gzipEncodingFormat = "gzip"
 )
 
+func isEncodingContentType(content string) bool {
+	if content == "application/json" ||
+		content == "text/html; charset=utf-8" {
+		return true
+	}
+
+	return false
+}
+
 func GzipMiddleware(h http.Handler) http.Handler {
 	gzipFn := func(writer http.ResponseWriter, req *http.Request) {
 		ow := writer
 
 		acceptEncoding := req.Header.Get("Accept-Encoding")
-		if strings.Contains(acceptEncoding, gzipEncodingFormat) {
+		supportGzip := strings.Contains(acceptEncoding, gzipEncodingFormat)
+		if supportGzip {
 			logger.Log.Debug("sending gzip encoded message")
 			cw := newCompressWriter(writer)
 			cw.writer.Header().Set("Content-Encoding", "gzip")
@@ -26,7 +36,9 @@ func GzipMiddleware(h http.Handler) http.Handler {
 		}
 
 		contentEncoding := req.Header.Get("Content-Encoding")
-		if strings.Contains(contentEncoding, gzipEncodingFormat) {
+		contentType := req.Header.Get("Content-Type")
+		sendGzip := strings.Contains(contentEncoding, gzipEncodingFormat)
+		if sendGzip && isEncodingContentType(contentType) {
 			cr, err := newCompressReader(req.Body)
 			if err != nil {
 				logger.Log.Error("invalid compress reader creation", zap.Error(err))
