@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,6 +22,7 @@ const (
 )
 
 func TestPostHandlerURL(t *testing.T) {
+	urls = storage.NewURLStorage()
 	type want struct {
 		statusCode  int
 		contentType string
@@ -110,6 +112,7 @@ func TestPostHandlerURL(t *testing.T) {
 }
 
 func TestPostHandlerJSON(t *testing.T) {
+	urls = storage.NewURLStorage()
 	type want struct {
 		statusCode   int
 		contentType  string
@@ -214,6 +217,7 @@ func TestPostHandlerJSON(t *testing.T) {
 }
 
 func TestGetHandler(t *testing.T) {
+	urls = storage.NewURLStorage()
 	type want struct {
 		statusCode  int
 		contentType string
