@@ -12,9 +12,16 @@ const (
 	gzipEncodingFormat = "gzip"
 )
 
+var (
+	validContentTypes = map[string]struct{}{
+		"application/json":         {},
+		"text/html; charset=utf-8": {},
+		"application/x-gzip":       {},
+	}
+)
+
 func isEncodingContentType(content string) bool {
-	if content == "application/json" ||
-		content == "text/html; charset=utf-8" {
+	if _, exists := validContentTypes[content]; exists {
 		return true
 	}
 

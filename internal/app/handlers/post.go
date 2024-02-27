@@ -21,11 +21,24 @@ func PostMiddleware(config config.Config, h http.HandlerFunc) http.HandlerFunc {
 }
 
 func postURLProcessing(inputURL, baseURIPrefix string) string {
-	userURL := entity.ParseURL(inputURL)
+	var shortURL *entity.URL
+	exists := true
 
 	encodedURL := base64.StdEncoding.EncodeToString([]byte(inputURL))
-	shortURL := entity.ParseURL(encodedURL[:maxEncodedSize])
+	availableURLCount := len(encodedURL) / maxEncodedSize
+	for i := 0; i < availableURLCount-1; i++ {
+		shortURL = entity.ParseURL(encodedURL[(maxEncodedSize * i):(maxEncodedSize * (i + 1))])
+		fmt.Println(shortURL)
+		if _, exists = urls.Get(*shortURL); !exists {
+			break
+		}
+	}
 
+	if exists {
+		return ""
+	}
+
+	userURL := entity.ParseURL(inputURL)
 	urls.Add(*shortURL, *userURL)
 
 	return fmt.Sprintf("%s/%s", baseURIPrefix, shortURL)
