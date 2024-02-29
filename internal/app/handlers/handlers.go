@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/models"
@@ -22,8 +25,21 @@ const (
 )
 
 var (
-	urls = storage.NewURLStorage()
+	urls *storage.URLStorage
 )
+
+func InitStorage(config config.Config) error {
+	storage, err := storage.NewURLStorage(config.DBStorage)
+	urls = storage
+
+	return err
+}
+
+func CloseStorage(config config.Config) {
+	if strings.Contains(config.DBStorage, os.TempDir()) {
+		os.Remove(config.DBStorage)
+	}
+}
 
 // Processes POST request. Sends short URL in http://localhost:8080/id format.
 //

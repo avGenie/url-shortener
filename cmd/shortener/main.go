@@ -19,6 +19,16 @@ func main() {
 	sugar := *logger.Log.Sugar()
 	defer sugar.Sync()
 
+	err = handlers.InitStorage(cnf)
+	if err != nil {
+		sugar.Fatalw(
+			err.Error(),
+			"event", "init storage",
+		)
+	}
+
+	defer handlers.CloseStorage(cnf)
+
 	sugar.Infow(
 		"Starting server",
 		"addr", cnf.NetAddr,
