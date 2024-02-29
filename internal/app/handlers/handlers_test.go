@@ -6,11 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,10 +20,35 @@ import (
 const (
 	baseURIPrefix = "http://localhost:8080"
 	netAddr       = "localhost:8080"
+	dbStorage     = "/tmp/short-url-db.json"
 )
 
+func initTestConfig() *config.Config {
+	return &config.Config{
+		NetAddr:       netAddr,
+		BaseURIPrefix: baseURIPrefix,
+		DBStorage:     dbStorage,
+	}
+}
+
+func initTestStorage(t *testing.T, config *config.Config) {
+	err := InitStorage(*config)
+	if err != nil {
+		t.Fatal("cannot initialize config")
+	}
+}
+
+func deferTestStorage(t *testing.T, config *config.Config) {
+	CloseStorage(*config)
+	_, err := os.Stat(config.DBStorage)
+	assert.Error(t, err)
+}
+
 func TestPostHandlerURL(t *testing.T) {
-	urls = storage.NewURLStorage()
+	config := initTestConfig()
+	initTestStorage(t, config)
+	defer deferTestStorage(t, config)
+
 	type want struct {
 		statusCode  int
 		contentType string
@@ -112,7 +138,10 @@ func TestPostHandlerURL(t *testing.T) {
 }
 
 func TestPostHandlerJSON(t *testing.T) {
-	urls = storage.NewURLStorage()
+	config := initTestConfig()
+	initTestStorage(t, config)
+	defer deferTestStorage(t, config)
+
 	type want struct {
 		statusCode   int
 		contentType  string
@@ -217,7 +246,10 @@ func TestPostHandlerJSON(t *testing.T) {
 }
 
 func TestGetHandler(t *testing.T) {
-	urls = storage.NewURLStorage()
+	config := initTestConfig()
+	initTestStorage(t, config)
+	defer deferTestStorage(t, config)
+
 	type want struct {
 		statusCode  int
 		contentType string
