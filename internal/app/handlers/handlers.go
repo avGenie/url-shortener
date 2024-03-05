@@ -90,6 +90,7 @@ func PostHandlerJSON(writer http.ResponseWriter, req *http.Request) {
 
 	inputRequest := &models.Request{}
 	err := json.NewDecoder(req.Body).Decode(&inputRequest)
+	defer req.Body.Close()
 	if err != nil {
 		logger.Log.Error(CannotProcessJSON, zap.Error(err))
 		http.Error(writer, CannotProcessJSON, http.StatusBadRequest)
