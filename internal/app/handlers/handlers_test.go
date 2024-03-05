@@ -106,10 +106,7 @@ func TestPostHandlerURL(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
 			writer := httptest.NewRecorder()
 
-			ctx := context.WithValue(request.Context(), baseURIPrefixCtx, test.baseURIPrefix)
-			request = request.WithContext(ctx)
-
-			PostHandlerURL(writer, request)
+			PostHandlerURL(test.baseURIPrefix, writer, request)
 
 			res := writer.Result()
 
@@ -216,10 +213,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
-			ctx := context.WithValue(request.Context(), baseURIPrefixCtx, test.baseURIPrefix)
-			request = request.WithContext(ctx)
-
-			PostHandlerJSON(writer, request)
+			PostHandlerJSON(test.baseURIPrefix, writer, request)
 
 			res := writer.Result()
 

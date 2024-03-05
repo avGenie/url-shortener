@@ -13,8 +13,11 @@ func CreateRouter(config config.Config) *chi.Mux {
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
 
-	r.Post("/", PostMiddleware(config, PostHandlerURL))
-	r.Post("/api/shorten", PostMiddleware(config, PostHandlerJSON))
+	postContextURL := NewPostContextURL(config)
+	postContextJSON := NewPostContextJSON(config)
+
+	r.Post("/", postContextURL.Handle())
+	r.Post("/api/shorten", postContextJSON.Handle())
 
 	r.Get("/{url}", GetHandler)
 

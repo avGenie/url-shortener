@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -10,14 +9,29 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/entity"
 )
 
-func PostMiddleware(config config.Config, h http.HandlerFunc) http.HandlerFunc {
-	logFn := func(w http.ResponseWriter, r *http.Request) {
-		r = r.WithContext(context.WithValue(r.Context(), baseURIPrefixCtx, config.BaseURIPrefix))
+type PostContext struct {
+	baseURIPrefix string
+	handle        func(string, http.ResponseWriter, *http.Request)
+}
 
-		h.ServeHTTP(w, r)
+func (ctx *PostContext) Handle() http.HandlerFunc {
+	return func(writer http.ResponseWriter, req *http.Request) {
+		ctx.handle(ctx.baseURIPrefix, writer, req)
 	}
+}
 
-	return http.HandlerFunc(logFn)
+func NewPostContextURL(config config.Config) *PostContext {
+	return &PostContext{
+		baseURIPrefix: config.BaseURIPrefix,
+		handle: PostHandlerURL,
+	}
+}
+
+func NewPostContextJSON(config config.Config) *PostContext {
+	return &PostContext{
+		baseURIPrefix: config.BaseURIPrefix,
+		handle: PostHandlerJSON,
+	}
 }
 
 func postURLProcessing(inputURL, baseURIPrefix string) (string, error) {

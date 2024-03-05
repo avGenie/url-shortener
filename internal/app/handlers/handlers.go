@@ -45,7 +45,7 @@ func CloseStorage(config config.Config) {
 // Encodes given URL using base64 encoding scheme and puts it to the URL's map.
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
-func PostHandlerURL(writer http.ResponseWriter, req *http.Request) {
+func PostHandlerURL(baseURIPrefix string, writer http.ResponseWriter, req *http.Request) {
 	zap.L().Debug("POST handler URL processing")
 
 	inputURL, err := io.ReadAll(req.Body)
@@ -63,7 +63,6 @@ func PostHandlerURL(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	baseURIPrefix := req.Context().Value(baseURIPrefixCtx).(string)
 	if baseURIPrefix == "" {
 		zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
 		http.Error(writer, InternalServerError, http.StatusInternalServerError)
@@ -84,7 +83,7 @@ func PostHandlerURL(writer http.ResponseWriter, req *http.Request) {
 	io.WriteString(writer, outputURL)
 }
 
-func PostHandlerJSON(writer http.ResponseWriter, req *http.Request) {
+func PostHandlerJSON(baseURIPrefix string, writer http.ResponseWriter, req *http.Request) {
 	zap.L().Debug("POST handler JSON processing")
 
 	inputRequest := &models.Request{}
@@ -102,7 +101,6 @@ func PostHandlerJSON(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	baseURIPrefix := req.Context().Value(baseURIPrefixCtx).(string)
 	if baseURIPrefix == "" {
 		zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
 		http.Error(writer, InternalServerError, http.StatusInternalServerError)
