@@ -59,7 +59,7 @@ func NewURLStorage(fileName string) (*URLStorage, error) {
 func (u *URLStorage) fillCacheFromFile() error {
 	u.file.Seek(0, 0)
 	scanner := bufio.NewScanner(u.file)
-	record := &entity.URLRecord{}
+	record := entity.URLRecord{}
 
 	for scanner.Scan() {
 		err := json.Unmarshal(scanner.Bytes(), &record)
@@ -114,6 +114,8 @@ func (u *URLStorage) Add(key, value entity.URL) error {
 	if err != nil {
 		return err
 	}
+
+	u.file.Sync()
 
 	u.cache[key] = value
 	u.lastID = storageRec.ID
