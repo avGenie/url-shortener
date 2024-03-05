@@ -70,9 +70,9 @@ func PostHandlerURL(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	outputURL := postURLProcessing(string(inputURL), baseURIPrefix)
-	if outputURL == "" {
-		zap.L().Error("could not create a short URL")
+	outputURL, err := postURLProcessing(string(inputURL), baseURIPrefix)
+	if err != nil || outputURL == "" {
+		zap.L().Error("could not create a short URL", zap.String("error", err.Error()))
 		http.Error(writer, InternalServerError, http.StatusInternalServerError)
 		return
 	}
@@ -109,9 +109,9 @@ func PostHandlerJSON(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	outputURL := postURLProcessing(inputRequest.URL, baseURIPrefix)
-	if outputURL == "" {
-		zap.L().Error("could not create a short URL")
+	outputURL, err := postURLProcessing(inputRequest.URL, baseURIPrefix)
+	if err != nil || outputURL == "" {
+		zap.L().Error("could not create a short URL", zap.String("error", err.Error()))
 		http.Error(writer, InternalServerError, http.StatusInternalServerError)
 		return
 	}

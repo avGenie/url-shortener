@@ -94,14 +94,21 @@ func (u *URLStorage) Get(key entity.URL) (entity.URL, bool) {
 }
 
 // Adds the given value under the specified key
-func (u *URLStorage) Add(key, value entity.URL) error {
+//
+// Returns `true` if element has been added to the storage.
+func (u *URLStorage) Add(key, value entity.URL) (bool, error) {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
+
+	
+	if _, ok := u.cache[key]; ok {
+		return false, nil
+	}
 
 	if u.file == nil {
 		u.cache[key] = value
 		u.lastID++
-		return nil
+		return true, nil
 	}
 
 	storageRec := &entity.URLRecord{
@@ -112,7 +119,7 @@ func (u *URLStorage) Add(key, value entity.URL) error {
 
 	err := u.encoder.Encode(&storageRec)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	u.file.Sync()
@@ -120,5 +127,5 @@ func (u *URLStorage) Add(key, value entity.URL) error {
 	u.cache[key] = value
 	u.lastID = storageRec.ID
 
-	return nil
+	return true, nil
 }
