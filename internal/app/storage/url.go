@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 type URLStorage struct {
@@ -25,7 +25,7 @@ type URLStorage struct {
 // Creates a new concurrent map
 func NewURLStorage(fileName string) (*URLStorage, error) {
 	if fileName == "" {
-		logger.Log.Info("storage was created successfully without keeping URL on disk")
+		zap.L().Info("storage was created successfully without keeping URL on disk")
 		return &URLStorage{
 			cache:  make(map[entity.URL]entity.URL),
 			lastID: 0,
@@ -50,7 +50,7 @@ func NewURLStorage(fileName string) (*URLStorage, error) {
 		return nil, err
 	}
 
-	logger.Log.Info("storage was created successfully")
+	zap.L().Info("storage was created successfully")
 
 	return storage, nil
 }

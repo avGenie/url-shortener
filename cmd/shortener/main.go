@@ -6,6 +6,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/handlers"
 	"github.com/avGenie/url-shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	sugar := *logger.Log.Sugar()
+	sugar := *zap.S()
 	defer sugar.Sync()
 
 	err = handlers.InitStorage(cnf)

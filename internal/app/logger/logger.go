@@ -8,8 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var Log *zap.Logger = zap.NewNop()
-
 func Initialize(config config.Config) error {
 	lvl, err := zap.ParseAtomicLevel(config.LogLevel)
 	if err != nil {
@@ -24,7 +22,7 @@ func Initialize(config config.Config) error {
 		return err
 	}
 
-	Log = zl
+	zap.ReplaceGlobals(zl)
 
 	return nil
 }
@@ -45,7 +43,7 @@ func LoggerMiddleware(h http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		Log.Info(
+		zap.L().Info(
 			"got incoming HTTP request",
 			zap.String("uri", r.RequestURI),
 			zap.String("method", r.Method),

@@ -34,7 +34,7 @@ func main() {
 	url, err := postRequest(client, data, cnf.NetAddr)
 	if err != nil {
 		log.Println("Post request error: : %w", err)
-		logger.Log.Fatal("post request error", zap.Error(err))
+		zap.L().Fatal("post request error", zap.Error(err))
 		panic(err)
 	}
 
@@ -60,13 +60,13 @@ func postRequest(client *http.Client, data, netAddr string) (string, error) {
 	url := fmt.Sprintf("http://%s", netAddr)
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(data)))
 	if err != nil {
-		logger.Log.Error("request couldn't be created", zap.String("method", "POST"), zap.Error(err))
+		zap.L().Error("request couldn't be created", zap.String("method", "POST"), zap.Error(err))
 		return "", err
 	}
 
 	response, err := client.Do(request)
 	if err != nil {
-		logger.Log.Error("request failed", zap.String("method", "POST"), zap.Error(err))
+		zap.L().Error("request failed", zap.String("method", "POST"), zap.Error(err))
 		return "", err
 	}
 
@@ -74,11 +74,11 @@ func postRequest(client *http.Client, data, netAddr string) (string, error) {
 	defer response.Body.Close()
 
 	if err != nil {
-		logger.Log.Error("failed to read response body", zap.String("method", "POST"), zap.Error(err))
+		zap.L().Error("failed to read response body", zap.String("method", "POST"), zap.Error(err))
 		return "", err
 	}
 
-	logger.Log.Info(
+	zap.L().Info(
 		"request output",
 		zap.String("method", "POST"),
 		zap.String("body", string(bodyBytes)),
@@ -92,18 +92,18 @@ func getRequest(client *http.Client, url, baseURIPrefix string) {
 	requestURL := fmt.Sprintf("%s/%s", baseURIPrefix, url)
 	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
-		logger.Log.Error("request couldn't be created", zap.String("method", "GET"), zap.Error(err))
+		zap.L().Error("request couldn't be created", zap.String("method", "GET"), zap.Error(err))
 		return
 	}
 
 	response, err := client.Do(request)
 	if err != nil {
-		logger.Log.Error("request failed", zap.String("method", "GET"), zap.Error(err))
+		zap.L().Error("request failed", zap.String("method", "GET"), zap.Error(err))
 		return
 	}
 	defer response.Body.Close()
 
-	logger.Log.Info(
+	zap.L().Info(
 		"request output",
 		zap.String("method", "GET"),
 		zap.String("location", response.Header.Get("Location")),
