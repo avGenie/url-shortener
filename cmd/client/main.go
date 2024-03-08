@@ -13,10 +13,17 @@ import (
 	"strings"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/avGenie/url-shortener/internal/app/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
 	cnf := config.InitConfig()
+
+	err := logger.Initialize(cnf)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -27,6 +34,7 @@ func main() {
 	url, err := postRequest(client, data, cnf.NetAddr)
 	if err != nil {
 		log.Println("Post request error: : %w", err)
+		zap.L().Fatal("post request error", zap.Error(err))
 		panic(err)
 	}
 
@@ -52,11 +60,13 @@ func postRequest(client *http.Client, data, netAddr string) (string, error) {
 	url := fmt.Sprintf("http://%s", netAddr)
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(data)))
 	if err != nil {
+		zap.L().Error("request couldn't be created", zap.String("method", "POST"), zap.Error(err))
 		return "", err
 	}
 
 	response, err := client.Do(request)
 	if err != nil {
+		zap.L().Error("request failed", zap.String("method", "POST"), zap.Error(err))
 		return "", err
 	}
 
@@ -64,10 +74,16 @@ func postRequest(client *http.Client, data, netAddr string) (string, error) {
 	defer response.Body.Close()
 
 	if err != nil {
+		zap.L().Error("failed to read response body", zap.String("method", "POST"), zap.Error(err))
 		return "", err
 	}
 
-	log.Println("Post request output: ", string(bodyBytes))
+	zap.L().Info(
+		"request output",
+		zap.String("method", "POST"),
+		zap.String("body", string(bodyBytes)),
+		zap.Int("status", response.StatusCode),
+	)
 
 	return path.Base(string(bodyBytes)), nil
 }
@@ -76,16 +92,21 @@ func getRequest(client *http.Client, url, baseURIPrefix string) {
 	requestURL := fmt.Sprintf("%s/%s", baseURIPrefix, url)
 	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
-		log.Println("Request has not been created: %w", err)
+		zap.L().Error("request couldn't be created", zap.String("method", "GET"), zap.Error(err))
 		return
 	}
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.Println("Request has not been sent: %w", err)
+		zap.L().Error("request failed", zap.String("method", "GET"), zap.Error(err))
 		return
 	}
 	defer response.Body.Close()
 
-	log.Println("Output location: ", response.Header.Get("Location"))
+	zap.L().Info(
+		"request output",
+		zap.String("method", "GET"),
+		zap.String("location", response.Header.Get("Location")),
+		zap.Int("status", response.StatusCode),
+	)
 }

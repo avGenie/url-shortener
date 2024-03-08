@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -16,8 +17,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPostHandler(t *testing.T) {
-	config := config.InitConfig()
+const (
+	baseURIPrefix = "http://localhost:8080"
+	netAddr       = "localhost:8080"
+	dbStorage     = "/tmp/short-url-db.json"
+)
+
+func initTestConfig() *config.Config {
+	return &config.Config{
+		NetAddr:       netAddr,
+		BaseURIPrefix: baseURIPrefix,
+		DBStorage:     dbStorage,
+	}
+}
+
+func initTestStorage(t *testing.T, config *config.Config) {
+	err := InitStorage(*config)
+	if err != nil {
+		t.Fatal("cannot initialize config")
+	}
+}
+
+func deferTestStorage(t *testing.T, config *config.Config) {
+	CloseStorage(*config)
+	_, err := os.Stat(config.DBStorage)
+	assert.Error(t, err)
+}
+
+func TestPostHandlerURL(t *testing.T) {
+	config := initTestConfig()
+	initTestStorage(t, config)
+	defer deferTestStorage(t, config)
 
 	type want struct {
 		statusCode  int
@@ -25,17 +55,19 @@ func TestPostHandler(t *testing.T) {
 		message     string
 	}
 	tests := []struct {
-		name    string
-		request string
-		URL     string
-		isError bool
-		want    want
+		name          string
+		request       string
+		URL           string
+		baseURIPrefix string
+		isError       bool
+		want          want
 	}{
 		{
-			name:    "correct input data",
-			request: "/",
-			URL:     "https://practicum.yandex.ru/",
-			isError: false,
+			name:          "correct input data",
+			request:       "/",
+			URL:           "https://practicum.yandex.ru/",
+			baseURIPrefix: baseURIPrefix,
+			isError:       false,
 
 			want: want{
 				statusCode:  201,
@@ -44,15 +76,27 @@ func TestPostHandler(t *testing.T) {
 			},
 		},
 		{
-			name:    "empty URL",
-			request: "/",
-			URL:     "",
-			isError: true,
+			name:          "empty URL",
+			request:       "/",
+			baseURIPrefix: baseURIPrefix,
+			isError:       true,
 
 			want: want{
 				statusCode:  400,
 				contentType: "text/plain; charset=utf-8",
-				message:     EmptyURL + "\n",
+				message:     WrongURLFormat + "\n",
+			},
+		},
+		{
+			name:    "empty base URI prefix",
+			request: "/",
+			URL:     "https://practicum.yandex.ru/",
+			isError: true,
+
+			want: want{
+				statusCode:  500,
+				contentType: "text/plain; charset=utf-8",
+				message:     InternalServerError + "\n",
 			},
 		},
 	}
@@ -62,7 +106,7 @@ func TestPostHandler(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
 			writer := httptest.NewRecorder()
 
-			PostHandler(config.BaseURIPrefix, writer, request)
+			PostHandlerURL(test.baseURIPrefix, writer, request)
 
 			res := writer.Result()
 
@@ -80,7 +124,7 @@ func TestPostHandler(t *testing.T) {
 				return
 			}
 
-			requiredOutput := fmt.Sprintf("http://%s/%s", config.NetAddr, test.want.message)
+			requiredOutput := fmt.Sprintf("http://%s/%s", netAddr, test.want.message)
 			assert.Equal(t, requiredOutput, string(userResult))
 
 			url, ok := urls.Get(*entity.ParseURL(test.want.message))
@@ -90,7 +134,116 @@ func TestPostHandler(t *testing.T) {
 	}
 }
 
+func TestPostHandlerJSON(t *testing.T) {
+	config := initTestConfig()
+	initTestStorage(t, config)
+	defer deferTestStorage(t, config)
+
+	type want struct {
+		statusCode   int
+		contentType  string
+		expectedBody string
+		urlsValue    string
+	}
+	tests := []struct {
+		name          string
+		request       string
+		body          string
+		baseURIPrefix string
+		urlsKey       string
+		isError       bool
+		want          want
+	}{
+		{
+			name:          "correct input data",
+			request:       "/",
+			body:          `{"url":"https://practicum.yandex.ru/"}`,
+			baseURIPrefix: baseURIPrefix,
+			urlsKey:       "aHR0cHM6",
+			isError:       false,
+
+			want: want{
+				statusCode:   201,
+				contentType:  "application/json",
+				expectedBody: `{"result":"http://localhost:8080/aHR0cHM6"}` + "\n",
+				urlsValue:    "https://practicum.yandex.ru/",
+			},
+		},
+		{
+			name:          "empty URL",
+			request:       "/",
+			body:          `{"url": ""}`,
+			baseURIPrefix: baseURIPrefix,
+			isError:       true,
+
+			want: want{
+				statusCode:   400,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: WrongURLFormat + "\n",
+			},
+		},
+		{
+			name:    "empty base URI prefix",
+			request: "/",
+			body:    `{"url":"https://practicum.yandex.ru"}`,
+			isError: true,
+
+			want: want{
+				statusCode:   500,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: InternalServerError + "\n",
+			},
+		},
+		{
+			name:    "cannot process JSON",
+			request: "/",
+			body:    "https://practicum.yandex.ru/",
+			isError: true,
+
+			want: want{
+				statusCode:   400,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: CannotProcessJSON + "\n",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
+			writer := httptest.NewRecorder()
+
+			PostHandlerJSON(test.baseURIPrefix, writer, request)
+
+			res := writer.Result()
+
+			assert.Equal(t, test.want.statusCode, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+
+			userResult, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			err = res.Body.Close()
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want.expectedBody, string(userResult))
+
+			if test.isError {
+				return
+			}
+
+			url, ok := urls.Get(*entity.ParseURL(test.urlsKey))
+			require.True(t, ok)
+			assert.Equal(t, url.String(), test.want.urlsValue)
+		})
+	}
+}
+
 func TestGetHandler(t *testing.T) {
+	config := initTestConfig()
+	initTestStorage(t, config)
+	defer deferTestStorage(t, config)
+
 	type want struct {
 		statusCode  int
 		contentType string
