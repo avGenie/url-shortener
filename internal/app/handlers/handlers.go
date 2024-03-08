@@ -28,15 +28,15 @@ var (
 )
 
 func InitStorage(config config.Config) error {
-	storage, err := storage.NewURLStorage(config.DBStorage)
+	storage, err := storage.NewURLStorage(config.DBFileStoragePath)
 	urls = storage
 
 	return err
 }
 
 func CloseStorage(config config.Config) {
-	if strings.Contains(config.DBStorage, os.TempDir()) {
-		os.Remove(config.DBStorage)
+	if strings.Contains(config.DBFileStoragePath, os.TempDir()) {
+		os.Remove(config.DBFileStoragePath)
 	}
 }
 

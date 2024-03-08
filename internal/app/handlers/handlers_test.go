@@ -25,9 +25,9 @@ const (
 
 func initTestConfig() *config.Config {
 	return &config.Config{
-		NetAddr:       netAddr,
-		BaseURIPrefix: baseURIPrefix,
-		DBStorage:     dbStorage,
+		NetAddr:           netAddr,
+		BaseURIPrefix:     baseURIPrefix,
+		DBFileStoragePath: dbStorage,
 	}
 }
 
@@ -40,7 +40,7 @@ func initTestStorage(t *testing.T, config *config.Config) {
 
 func deferTestStorage(t *testing.T, config *config.Config) {
 	CloseStorage(*config)
-	_, err := os.Stat(config.DBStorage)
+	_, err := os.Stat(config.DBFileStoragePath)
 	assert.Error(t, err)
 }
 
