@@ -1,8 +1,14 @@
 package storage
 
-import "context"
+import (
+	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/storage/postgres"
+)
 
-type DBStorage interface {
-	Close() error
-	PingDBServer(context.Context) int
+
+func InitStorage(dbStorageConnect string) (entity.DBStorage, error) {
+	var db entity.DBStorage
+	db, err := postgres.New(dbStorageConnect)
+
+	return db, err
 }

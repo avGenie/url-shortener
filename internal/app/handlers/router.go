@@ -3,11 +3,12 @@ package handlers
 import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
+	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/go-chi/chi/v5"
 )
 
-func CreateRouter(config config.Config) *chi.Mux {
+func CreateRouter(config config.Config, db entity.DBStorage) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(logger.LoggerMiddleware)
@@ -19,7 +20,10 @@ func CreateRouter(config config.Config) *chi.Mux {
 	r.Post("/", postContextURL.Handle())
 	r.Post("/api/shorten", postContextJSON.Handle())
 
+	getDBPing := NewGetDBPingContext(db)
+
 	r.Get("/{url}", GetHandler)
+	r.Get("/ping", getDBPing.Handle())
 
 	return r
 }

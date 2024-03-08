@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
@@ -15,12 +18,8 @@ import (
 	"go.uber.org/zap"
 )
 
-type favContextKey string
-
 const (
 	maxEncodedSize = 8
-
-	baseURIPrefixCtx = favContextKey("baseURIPrefix")
 )
 
 var (
@@ -150,4 +149,23 @@ func GetHandler(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	writer.Header().Set("Location", decodedURL.String())
 	writer.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func GetPingDB(db entity.DBStorage, writer http.ResponseWriter, req *http.Request) {
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
+	defer cancel()
+
+	statusCode, err := db.PingDBServer(ctx)
+	if err != nil {
+		switch {
+		case errors.Is(err, context.Canceled):
+			zap.L().Error("context canceled", zap.String("error", err.Error()))
+		case errors.Is(err, context.DeadlineExceeded):
+			zap.L().Error("context deadline exceeded", zap.String("error", err.Error()))
+		default:
+			zap.L().Error(err.Error())
+		}
+	}
+
+	writer.WriteHeader(statusCode)
 }

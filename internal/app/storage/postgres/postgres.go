@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/avGenie/url-shortener/internal/app/storage"
-	"go.uber.org/zap"
+	"github.com/avGenie/url-shortener/internal/app/entity"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type PostgresStorage struct {
-	storage.DBStorage
+	entity.DBStorage
 
 	db *sql.DB
 }
 
 func New(dbStorageConnect string) (*PostgresStorage, error) {
-	db ,err := sql.Open("postgres", dbStorageConnect)
+	db, err := sql.Open("pgx", dbStorageConnect)
 	if err != nil {
 		return nil, fmt.Errorf("error while postgresql connect: %w", err)
 	}
@@ -31,12 +31,11 @@ func (s *PostgresStorage) Close() error {
 	return s.db.Close()
 }
 
-func (s *PostgresStorage) PingDBServer(ctx context.Context) int {
+func (s *PostgresStorage) PingDBServer(ctx context.Context) (int, error) {
 	err := s.db.PingContext(ctx)
 	if err != nil {
-		zap.L().Error("cannot ping postgres db", zap.String("error", err.Error()))
-        return http.StatusInternalServerError
-    }
+		return http.StatusInternalServerError, err
+	}
 
-	return http.StatusOK
+	return http.StatusOK, nil
 }

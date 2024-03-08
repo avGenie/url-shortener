@@ -6,6 +6,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/handlers"
 	"github.com/avGenie/url-shortener/internal/app/logger"
+	"github.com/avGenie/url-shortener/internal/app/storage"
 	"go.uber.org/zap"
 )
 
@@ -24,18 +25,27 @@ func main() {
 	if err != nil {
 		sugar.Fatalw(
 			err.Error(),
-			"event", "init storage",
+			"event", "init file storage",
 		)
 	}
 
 	defer handlers.CloseStorage(cnf)
+
+	db, err := storage.InitStorage(cnf.DBStorageConnect)
+	if err != nil {
+		sugar.Fatalw(
+			err.Error(),
+			"event", "init database storage",
+		)
+	}
+	defer db.Close()
 
 	sugar.Infow(
 		"Starting server",
 		"addr", cnf.NetAddr,
 	)
 
-	err = http.ListenAndServe(cnf.NetAddr, handlers.CreateRouter(cnf))
+	err = http.ListenAndServe(cnf.NetAddr, handlers.CreateRouter(cnf, db))
 	if err != nil && err != http.ErrServerClosed {
 		sugar.Fatalw(
 			err.Error(),
