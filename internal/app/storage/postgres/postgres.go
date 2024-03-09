@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -16,7 +15,7 @@ type PostgresStorage struct {
 	db *sql.DB
 }
 
-func New(dbStorageConnect string) (*PostgresStorage, error) {
+func NewPostgresStorage(dbStorageConnect string) (*PostgresStorage, error) {
 	db, err := sql.Open("pgx", dbStorageConnect)
 	if err != nil {
 		return nil, fmt.Errorf("error while postgresql connect: %w", err)
@@ -27,15 +26,30 @@ func New(dbStorageConnect string) (*PostgresStorage, error) {
 	}, nil
 }
 
-func (s *PostgresStorage) Close() error {
-	return s.db.Close()
-}
-
-func (s *PostgresStorage) PingDBServer(ctx context.Context) (int, error) {
-	err := s.db.PingContext(ctx)
+func (s *PostgresStorage) Close() entity.Response {
+	err := s.db.Close()
 	if err != nil {
-		return http.StatusInternalServerError, err
+		outErr := fmt.Errorf("couldn'r closed postgres db: %w", err)
+		return entity.ErrorResponse(outErr)
 	}
 
-	return http.StatusOK, nil
+	return entity.OKResponse()
+}
+
+func (s *PostgresStorage) PingServer(ctx context.Context) entity.Response {
+	err := s.db.PingContext(ctx)
+	if err != nil {
+		outErr := fmt.Errorf("couldn'r ping postgres server: %w", err)
+		return entity.ErrorResponse(outErr)
+	}
+
+	return entity.OKResponse()
+}
+
+func (s *PostgresStorage) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
+	return entity.OKResponse()
+}
+
+func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
+	return entity.OKURLResponse(entity.URL{})
 }
