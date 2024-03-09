@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	entity "github.com/avGenie/url-shortener/internal/app/entity"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -34,11 +35,25 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
+// AddURL mocks base method.
+func (m *MockStorage) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddURL", ctx, key, value)
+	ret0, _ := ret[0].(entity.Response)
+	return ret0
+}
+
+// AddURL indicates an expected call of AddURL.
+func (mr *MockStorageMockRecorder) AddURL(ctx, key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddURL", reflect.TypeOf((*MockStorage)(nil).AddURL), ctx, key, value)
+}
+
 // Close mocks base method.
-func (m *MockStorage) Close() error {
+func (m *MockStorage) Close() entity.Response {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(entity.Response)
 	return ret0
 }
 
@@ -48,17 +63,30 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorage)(nil).Close))
 }
 
-// PingDBServer mocks base method.
-func (m *MockStorage) PingDBServer(arg0 context.Context) (int, error) {
+// GetURL mocks base method.
+func (m *MockStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PingDBServer", arg0)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "GetURL", ctx, key)
+	ret0, _ := ret[0].(entity.URLResponse)
+	return ret0
 }
 
-// PingDBServer indicates an expected call of PingDBServer.
-func (mr *MockStorageMockRecorder) PingDBServer(arg0 interface{}) *gomock.Call {
+// GetURL indicates an expected call of GetURL.
+func (mr *MockStorageMockRecorder) GetURL(ctx, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingDBServer", reflect.TypeOf((*MockStorage)(nil).PingDBServer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockStorage)(nil).GetURL), ctx, key)
+}
+
+// PingServer mocks base method.
+func (m *MockStorage) PingServer(ctx context.Context) entity.Response {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PingServer", ctx)
+	ret0, _ := ret[0].(entity.Response)
+	return ret0
+}
+
+// PingServer indicates an expected call of PingServer.
+func (mr *MockStorageMockRecorder) PingServer(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingServer", reflect.TypeOf((*MockStorage)(nil).PingServer), ctx)
 }
