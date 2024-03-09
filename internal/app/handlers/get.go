@@ -7,8 +7,8 @@ import (
 )
 
 type GetDBContext struct {
-	db     entity.DBStorage
-	handle func(entity.DBStorage, http.ResponseWriter, *http.Request)
+	db     entity.Storage
+	handle func(entity.Storage, http.ResponseWriter, *http.Request)
 }
 
 func (ctx *GetDBContext) Handle() http.HandlerFunc {
@@ -17,7 +17,7 @@ func (ctx *GetDBContext) Handle() http.HandlerFunc {
 	}
 }
 
-func NewGetDBPingContext(db entity.DBStorage) GetDBContext {
+func NewGetDBPingContext(db entity.Storage) GetDBContext {
 	return GetDBContext{
 		db:     db,
 		handle: GetPingDB,

@@ -12,7 +12,9 @@ import (
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/entity/mock"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -332,6 +334,57 @@ func TestGetHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want.message, string(userResult))
+		})
+	}
+}
+
+func TestGetPingDBHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	s := mock.NewMockStorage(ctrl)
+
+	type want struct {
+		statusCode int
+		err        error
+	}
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "successfull ping",
+
+			want: want{
+				statusCode: http.StatusOK,
+				err:        nil,
+			},
+		},
+		{
+			name: "fallen ping",
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
+				err:        context.DeadlineExceeded,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/{url}", nil)
+			writer := httptest.NewRecorder()
+
+			s.EXPECT().
+				PingDBServer(gomock.Any()).
+				Return(test.want.statusCode, test.want.err)
+
+			GetPingDB(s, writer, request)
+
+			res := writer.Result()
+
+			err := res.Body.Close()
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want.statusCode, res.StatusCode)
 		})
 	}
 }

@@ -151,7 +151,8 @@ func GetHandler(writer http.ResponseWriter, req *http.Request) {
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func GetPingDB(db entity.DBStorage, writer http.ResponseWriter, req *http.Request) {
+// TODO: add interface PingDBServer instead of entity.DBStorage
+func GetPingDB(db entity.Storage, writer http.ResponseWriter, req *http.Request) {
 	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
 	defer cancel()
 

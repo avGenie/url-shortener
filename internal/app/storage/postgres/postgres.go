@@ -11,7 +11,7 @@ import (
 )
 
 type PostgresStorage struct {
-	entity.DBStorage
+	entity.Storage
 
 	db *sql.DB
 }

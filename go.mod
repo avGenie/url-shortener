@@ -5,6 +5,7 @@ go 1.21.6
 require (
 	github.com/caarlos0/env/v10 v10.0.0
 	github.com/go-chi/chi/v5 v5.0.11
+	github.com/golang/mock v1.6.0
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.27.0

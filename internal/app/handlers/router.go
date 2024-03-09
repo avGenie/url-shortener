@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func CreateRouter(config config.Config, db entity.DBStorage) *chi.Mux {
+func CreateRouter(config config.Config, db entity.Storage) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(logger.LoggerMiddleware)
