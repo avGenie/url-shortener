@@ -2,20 +2,27 @@ package file
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/storage/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
 	"go.uber.org/zap"
 )
 
 type FileStorage struct {
+	entity.Storage
+
 	mutex sync.RWMutex
 
-	file    *os.File
-	encoder *json.Encoder
+	file     *os.File
+	fileName string
+	encoder  *json.Encoder
 
 	cache  local.LocalStorage
 	lastID uint
@@ -39,11 +46,12 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	}
 
 	storage := &FileStorage{
-		mutex:   sync.RWMutex{},
-		file:    file,
-		encoder: json.NewEncoder(file),
-		cache:   *local.NewLocalStorage(0),
-		lastID:  0,
+		mutex:    sync.RWMutex{},
+		file:     file,
+		fileName: fileName,
+		encoder:  json.NewEncoder(file),
+		cache:    *local.NewLocalStorage(0),
+		lastID:   0,
 	}
 
 	err = storage.fillCacheFromFile()
@@ -57,30 +65,33 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 }
 
 // Returns an element from the map
-func (s *FileStorage) Get(key entity.URL) (entity.URL, bool) {
+func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
 	s.mutex.RLock()
 	res, ok := s.cache.Get(key)
 	s.mutex.RUnlock()
 
-	return res, ok
+	if !ok {
+		return entity.ErrorURLResponse(errors.ErrShortURLNotFound)
+	}
+
+	return entity.OKURLResponse(res)
 }
 
 // Adds the given value under the specified key
 //
 // Returns `true` if element has been added to the storage.
-func (s *FileStorage) Add(key, value entity.URL) (bool, error) {
+func (s *FileStorage) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	
 	if _, ok := s.cache.Get(key); ok {
-		return false, nil
+		return entity.ErrorResponse(errors.ErrURLAlreadyExists)
 	}
 
 	if s.file == nil {
 		s.cache.Add(key, value)
 		s.lastID++
-		return true, nil
+		return entity.OKResponse()
 	}
 
 	storageRec := &entity.URLRecord{
@@ -91,7 +102,8 @@ func (s *FileStorage) Add(key, value entity.URL) (bool, error) {
 
 	err := s.encoder.Encode(&storageRec)
 	if err != nil {
-		return false, err
+		outputErr := fmt.Errorf("error while encoding entity for file commit: %w", err)
+		return entity.ErrorResponse(outputErr)
 	}
 
 	s.file.Sync()
@@ -99,7 +111,27 @@ func (s *FileStorage) Add(key, value entity.URL) (bool, error) {
 	s.cache.Add(key, value)
 	s.lastID = storageRec.ID
 
-	return true, nil
+	return entity.OKResponse()
+}
+
+func (s *FileStorage) Close() entity.Response {
+	s.file.Name()
+	if strings.Contains(s.fileName, os.TempDir()) {
+		err := os.Remove(s.fileName)
+		if err != nil {
+			return entity.ErrorResponse(err)
+		}
+	}
+
+	return entity.OKResponse()
+}
+
+func (s *FileStorage) PingServer(ctx context.Context) entity.Response {
+	if s.file == nil {
+		return entity.ErrorResponse(errors.ErrFileStorageNotOpen)
+	}
+
+	return entity.OKResponse()
 }
 
 // Fills cache from the DB storage file
