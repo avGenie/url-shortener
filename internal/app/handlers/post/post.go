@@ -13,7 +13,7 @@ import (
 
 const (
 	maxEncodedSize = 8
-	timeout = 1*time.Second
+	timeout        = 3 * time.Second
 )
 
 type URLSaver interface {

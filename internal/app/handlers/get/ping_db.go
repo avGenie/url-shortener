@@ -4,14 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"go.uber.org/zap"
-)
-
-const (
-	pingTimeout = 1*time.Second
 )
 
 type StoragePinger interface {
@@ -20,7 +15,7 @@ type StoragePinger interface {
 
 func GetPingDB(pinger StoragePinger) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
-		ctx, cancel := context.WithTimeout(req.Context(), pingTimeout)
+		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
 		response := pinger.PingServer(ctx)
