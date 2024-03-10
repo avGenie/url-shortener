@@ -21,7 +21,7 @@ func InitStorage(config config.Config) (entity.Storage, error) {
 		db, err = file.NewFileStorage(config.DBFileStoragePath)
 	} else {
 		zap.L().Info("init local storage")
-		db = local.NewTsLocalStorage(0)
+		db = local.NewTSLocalStorage(0)
 		err = nil
 	}
 

@@ -8,21 +8,21 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/storage/errors"
 )
 
-type TsLocalStorage struct {
+type TSLocalStorage struct {
 	entity.Storage
 
 	mutex sync.RWMutex
-	urls LocalStorage
+	urls  LocalStorage
 }
 
-func NewTsLocalStorage(size int) *TsLocalStorage {
-	return &TsLocalStorage{
+func NewTSLocalStorage(size int) *TSLocalStorage {
+	return &TSLocalStorage{
 		urls: *NewLocalStorage(size),
 	}
 }
 
 // Returns an element from the map
-func (s *TsLocalStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
+func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
 	s.mutex.RLock()
 	res, ok := s.urls.Get(key)
 	s.mutex.RUnlock()
@@ -35,7 +35,7 @@ func (s *TsLocalStorage) GetURL(ctx context.Context, key entity.URL) entity.URLR
 }
 
 // Adds the given value under the specified key
-func (s *TsLocalStorage) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
+func (s *TSLocalStorage) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
 	s.mutex.Lock()
 	s.urls.Add(key, value)
 	s.mutex.Unlock()
