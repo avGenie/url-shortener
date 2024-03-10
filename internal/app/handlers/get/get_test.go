@@ -8,9 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/handlers/get/mock"
+	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +21,8 @@ import (
 
 func TestGetHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	s := mock.NewMockURLGetter(ctrl)
 
 	type want struct {
@@ -105,7 +109,13 @@ func TestGetHandler(t *testing.T) {
 }
 
 func TestGetPingDBHandler(t *testing.T) {
+	cnf := config.InitConfig()
+
+	logger.Initialize(cnf)
+
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	s := mock.NewMockStoragePinger(ctrl)
 
 	type want struct {

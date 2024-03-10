@@ -37,6 +37,8 @@ func GetPingDB(pinger StoragePinger) http.HandlerFunc {
 			return
 		}
 
+		zap.L().Info("storage works after ping")
+
 		writer.WriteHeader(http.StatusOK)
 	}
 }
