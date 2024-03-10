@@ -374,7 +374,7 @@ func TestGetPingDBHandler(t *testing.T) {
 			writer := httptest.NewRecorder()
 
 			s.EXPECT().
-				PingDBServer(gomock.Any()).
+				PingServer(gomock.Any()).
 				Return(test.want.statusCode, test.want.err)
 
 			GetPingDB(s, writer, request)

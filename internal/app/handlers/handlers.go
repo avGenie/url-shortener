@@ -156,17 +156,19 @@ func GetPingDB(db entity.Storage, writer http.ResponseWriter, req *http.Request)
 	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
 	defer cancel()
 
-	statusCode, err := db.PingDBServer(ctx)
-	if err != nil {
+	response := db.PingServer(ctx)
+	if response.Status == entity.StatusError {
 		switch {
-		case errors.Is(err, context.Canceled):
-			zap.L().Error("context canceled", zap.String("error", err.Error()))
-		case errors.Is(err, context.DeadlineExceeded):
-			zap.L().Error("context deadline exceeded", zap.String("error", err.Error()))
+		case errors.Is(response.Error, context.Canceled):
+			zap.L().Error("context canceled", zap.String("error", response.Error.Error()))
+		case errors.Is(response.Error, context.DeadlineExceeded):
+			zap.L().Error("context deadline exceeded", zap.String("error", response.Error.Error()))
 		default:
-			zap.L().Error(err.Error())
+			zap.L().Error(response.Error.Error())
 		}
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	writer.WriteHeader(statusCode)
+	writer.WriteHeader(http.StatusOK)
 }
