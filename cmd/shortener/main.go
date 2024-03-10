@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/http"
+		"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/handlers"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 	cnf := config.InitConfig()
-
+	
 	err := logger.Initialize(cnf)
 	if err != nil {
 		panic(err.Error())
@@ -21,21 +21,11 @@ func main() {
 	sugar := *zap.S()
 	defer sugar.Sync()
 
-	err = handlers.InitStorage(cnf)
+	db, err := storage.InitStorage(cnf)
 	if err != nil {
 		sugar.Fatalw(
 			err.Error(),
-			"event", "init file storage",
-		)
-	}
-
-	defer handlers.CloseStorage(cnf)
-
-	db, err := storage.InitStorage(cnf.DBStorageConnect)
-	if err != nil {
-		sugar.Fatalw(
-			err.Error(),
-			"event", "init database storage",
+			"event", "init storage",
 		)
 	}
 	defer db.Close()
