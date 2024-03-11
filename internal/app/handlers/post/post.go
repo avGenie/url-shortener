@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	db_err "github.com/avGenie/url-shortener/internal/app/storage/errors"
+	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
 )
 
 const (
@@ -34,7 +34,7 @@ func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPre
 		if resp.Status == entity.StatusOK {
 			added = true
 			break
-		} else if !errors.Is(resp.Error, db_err.ErrURLAlreadyExists) {
+		} else if !errors.Is(resp.Error, storage.ErrURLAlreadyExists) {
 			return "", resp.Error
 		}
 	}

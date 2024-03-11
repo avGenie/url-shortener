@@ -5,11 +5,12 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/storage/errors"
+	"github.com/avGenie/url-shortener/internal/app/storage/api"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
 
 type TSLocalStorage struct {
-	entity.Storage
+	model.Storage
 
 	mutex sync.RWMutex
 	urls  LocalStorage
@@ -28,7 +29,7 @@ func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) entity.URLR
 	s.mutex.RUnlock()
 
 	if !ok {
-		return entity.ErrorURLResponse(errors.ErrShortURLNotFound)
+		return entity.ErrorURLResponse(api.ErrShortURLNotFound)
 	}
 
 	return entity.OKURLResponse(res)

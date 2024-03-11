@@ -2,15 +2,15 @@ package storage
 
 import (
 	"github.com/avGenie/url-shortener/internal/app/config"
-	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/file"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
 	"github.com/avGenie/url-shortener/internal/app/storage/postgres"
 	"go.uber.org/zap"
 )
 
-func InitStorage(config config.Config) (entity.Storage, error) {
-	var db entity.Storage
+func InitStorage(config config.Config) (model.Storage, error) {
+	var db model.Storage
 	var err error
 
 	if len(config.DBStorageConnect) > 0 {

@@ -3,14 +3,14 @@ package handlers
 import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
-	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/handlers/get"
 	"github.com/avGenie/url-shortener/internal/app/handlers/post"
 	"github.com/avGenie/url-shortener/internal/app/logger"
+	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/go-chi/chi/v5"
 )
 
-func CreateRouter(config config.Config, db entity.Storage) *chi.Mux {
+func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(logger.LoggerMiddleware)

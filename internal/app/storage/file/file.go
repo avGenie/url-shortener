@@ -10,13 +10,14 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/storage/errors"
+	"github.com/avGenie/url-shortener/internal/app/storage/api"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
 	"go.uber.org/zap"
 )
 
 type FileStorage struct {
-	entity.Storage
+	model.Storage
 
 	mutex sync.RWMutex
 
@@ -71,7 +72,7 @@ func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResp
 	s.mutex.RUnlock()
 
 	if !ok {
-		return entity.ErrorURLResponse(errors.ErrShortURLNotFound)
+		return entity.ErrorURLResponse(api.ErrShortURLNotFound)
 	}
 
 	return entity.OKURLResponse(res)
@@ -85,7 +86,7 @@ func (s *FileStorage) AddURL(ctx context.Context, key, value entity.URL) entity.
 	defer s.mutex.Unlock()
 
 	if _, ok := s.cache.Get(key); ok {
-		return entity.ErrorResponse(errors.ErrURLAlreadyExists)
+		return entity.ErrorResponse(api.ErrURLAlreadyExists)
 	}
 
 	if s.file == nil {
@@ -128,7 +129,7 @@ func (s *FileStorage) Close() entity.Response {
 
 func (s *FileStorage) PingServer(ctx context.Context) entity.Response {
 	if s.file == nil {
-		return entity.ErrorResponse(errors.ErrFileStorageNotOpen)
+		return entity.ErrorResponse(api.ErrFileStorageNotOpen)
 	}
 
 	return entity.OKResponse()

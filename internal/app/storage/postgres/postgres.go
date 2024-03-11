@@ -6,13 +6,14 @@ import (
 	"fmt"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/postgres/migration"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type PostgresStorage struct {
-	entity.Storage
+	model.Storage
 
 	db *sql.DB
 }
@@ -46,7 +47,7 @@ func (s *PostgresStorage) Close() entity.Response {
 func (s *PostgresStorage) PingServer(ctx context.Context) entity.Response {
 	err := s.db.PingContext(ctx)
 	if err != nil {
-		outErr := fmt.Errorf("couldn'r ping postgres server: %w", err)
+		outErr := fmt.Errorf("couldn't ping postgres server: %w", err)
 		return entity.ErrorResponse(outErr)
 	}
 
