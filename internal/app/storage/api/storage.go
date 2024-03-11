@@ -1,4 +1,4 @@
-package storage
+package api
 
 import (
 	"github.com/avGenie/url-shortener/internal/app/config"

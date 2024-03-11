@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
+	storage "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 )
 
 const (

@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/storage/api"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
 	"go.uber.org/zap"

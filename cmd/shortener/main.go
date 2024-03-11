@@ -6,7 +6,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/handlers"
 	"github.com/avGenie/url-shortener/internal/app/logger"
-	"github.com/avGenie/url-shortener/internal/app/storage"
+	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
 	"go.uber.org/zap"
 )
 
