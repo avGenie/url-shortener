@@ -171,5 +171,11 @@ func TestGetPingDBHandler(t *testing.T) {
 }
 
 func makeOKURLResponse(URL string) entity.URLResponse {
-	return entity.OKURLResponse(*entity.ParseURL(URL))
+	var outURL entity.URL
+	eURL, err := entity.ParseURL(URL)
+	if err == nil {
+		outURL = *eURL
+	}
+
+	return entity.OKURLResponse(outURL)
 }

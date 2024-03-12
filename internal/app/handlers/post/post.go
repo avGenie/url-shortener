@@ -2,13 +2,16 @@ package post
 
 import (
 	"context"
-	"encoding/base64"
+	"crypto/sha256"
+	"encoding/hex"
+
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
+	"go.uber.org/zap"
 )
 
 const (
@@ -21,26 +24,28 @@ type URLSaver interface {
 }
 
 func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPrefix string) (string, error) {
-	var shortURL *entity.URL
+	h := sha256.New()
+	h.Write([]byte(inputURL))
+	bs := h.Sum(nil)
 
-	userURL := entity.ParseURL(inputURL)
-	added := false
-
-	encodedURL := base64.StdEncoding.EncodeToString([]byte(inputURL))
-	availableURLCount := len(encodedURL) / maxEncodedSize
-	for i := 0; i < availableURLCount-1; i++ {
-		shortURL = entity.ParseURL(encodedURL[(maxEncodedSize * i):(maxEncodedSize * (i + 1))])
-		resp := saver.AddURL(ctx, *shortURL, *userURL)
-		if resp.Status == entity.StatusOK {
-			added = true
-			break
-		} else if !errors.Is(resp.Error, storage.ErrURLAlreadyExists) {
-			return "", resp.Error
-		}
+	shortURL, err := entity.ParseURL(hex.EncodeToString(bs)[:maxEncodedSize])
+	if err != nil {
+		zap.L().Error("error while parsing short url")
+		return "", err
 	}
 
-	if !added {
-		return "", nil
+	userURL, err := entity.ParseURL(inputURL)
+	if err != nil {
+		zap.L().Error("error while parsing user url")
+		return "", err
+	}
+
+	resp := saver.AddURL(ctx, *shortURL, *userURL)
+	if resp.Status == entity.StatusError {
+		if !errors.Is(resp.Error, storage.ErrURLAlreadyExists) {
+			return "", resp.Error
+		}
+		return "", resp.Error
 	}
 
 	return fmt.Sprintf("%s/%s", baseURIPrefix, shortURL), nil

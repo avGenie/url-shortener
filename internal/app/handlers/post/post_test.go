@@ -51,7 +51,7 @@ func TestPostHandlerURL(t *testing.T) {
 			want: want{
 				statusCode:  201,
 				contentType: "text/plain; charset=utf-8",
-				message:     "aHR0cHM6",
+				message:     "42b3e75f",
 				resp:        entity.OKResponse(),
 			},
 		},
@@ -148,12 +148,12 @@ func TestPostHandlerJSON(t *testing.T) {
 			request:       "/",
 			body:          `{"url":"https://practicum.yandex.ru/"}`,
 			baseURIPrefix: baseURIPrefix,
-			urlsKey:       "aHR0cHM6",
+			urlsKey:       "42b3e75f",
 
 			want: want{
 				statusCode:   201,
 				contentType:  "application/json",
-				expectedBody: `{"result":"http://localhost:8080/aHR0cHM6"}` + "\n",
+				expectedBody: `{"result":"http://localhost:8080/42b3e75f"}` + "\n",
 				urlsValue:    "https://practicum.yandex.ru/",
 				resp:         entity.OKResponse(),
 			},

@@ -27,7 +27,18 @@ func GetURLHandler(getter URLGetter) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
 		defer cancel()
 
-		resp := getter.GetURL(ctx, *entity.ParseURL(shortURL))
+		eShortURL, err := entity.ParseURL(shortURL)
+		if err != nil {
+			zap.L().Error(
+				"error while parsing short url",
+				zap.String("error", err.Error()),
+				zap.String("short_url", shortURL),
+			)
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		resp := getter.GetURL(ctx, *eShortURL)
 		if resp.Status == entity.StatusError {
 			zap.L().Error(
 				"error while getting url",
