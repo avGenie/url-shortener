@@ -35,16 +35,16 @@ func (m *MockURLSaver) EXPECT() *MockURLSaverMockRecorder {
 	return m.recorder
 }
 
-// AddURL mocks base method.
-func (m *MockURLSaver) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
+// SaveURL mocks base method.
+func (m *MockURLSaver) SaveURL(ctx context.Context, key, value entity.URL) entity.Response {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddURL", ctx, key, value)
+	ret := m.ctrl.Call(m, "SaveURL", ctx, key, value)
 	ret0, _ := ret[0].(entity.Response)
 	return ret0
 }
 
-// AddURL indicates an expected call of AddURL.
-func (mr *MockURLSaverMockRecorder) AddURL(ctx, key, value interface{}) *gomock.Call {
+// SaveURL indicates an expected call of SaveURL.
+func (mr *MockURLSaverMockRecorder) SaveURL(ctx, key, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddURL", reflect.TypeOf((*MockURLSaver)(nil).AddURL), ctx, key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockURLSaver)(nil).SaveURL), ctx, key, value)
 }

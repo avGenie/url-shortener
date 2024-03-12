@@ -88,11 +88,11 @@ func TestPostHandlerURL(t *testing.T) {
 
 			if test.want.resp.Status == "" {
 				s.EXPECT().
-					AddURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 			} else {
 				s.EXPECT().
-					AddURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(test.want.resp)
 			}
@@ -201,11 +201,11 @@ func TestPostHandlerJSON(t *testing.T) {
 
 			if test.want.resp.Status == "" {
 				s.EXPECT().
-					AddURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 			} else {
 				s.EXPECT().
-					AddURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(test.want.resp)
 			}

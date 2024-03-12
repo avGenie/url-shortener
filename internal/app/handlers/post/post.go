@@ -20,7 +20,7 @@ const (
 )
 
 type URLSaver interface {
-	AddURL(ctx context.Context, key, value entity.URL) entity.Response
+	SaveURL(ctx context.Context, key, value entity.URL) entity.Response
 }
 
 func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPrefix string) (string, error) {
@@ -40,7 +40,7 @@ func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPre
 		return "", err
 	}
 
-	resp := saver.AddURL(ctx, *shortURL, *userURL)
+	resp := saver.SaveURL(ctx, *shortURL, *userURL)
 	if resp.Status == entity.StatusError {
 		if !errors.Is(resp.Error, storage.ErrURLAlreadyExists) {
 			return "", resp.Error

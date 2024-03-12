@@ -54,7 +54,7 @@ func (s *PostgresStorage) PingServer(ctx context.Context) entity.Response {
 	return entity.OKResponse()
 }
 
-func (s *PostgresStorage) AddURL(ctx context.Context, key, value entity.URL) entity.Response {
+func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.Response {
 	query := `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url)`
 	args := pgx.NamedArgs{
 		"shortUrl": key.String(),

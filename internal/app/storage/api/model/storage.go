@@ -9,6 +9,6 @@ import (
 type Storage interface {
 	Close() entity.Response
 	PingServer(ctx context.Context) entity.Response
-	AddURL(ctx context.Context, key, value entity.URL) entity.Response
+	SaveURL(ctx context.Context, key, value entity.URL) entity.Response
 	GetURL(ctx context.Context, key entity.URL) entity.URLResponse
 }
