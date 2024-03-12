@@ -167,7 +167,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			want: want{
 				statusCode:   400,
 				contentType:  "text/plain; charset=utf-8",
-				expectedBody: errors.WrongURLFormat + "\n",
+				expectedBody: errors.WrongJSONFormat + "\n",
 			},
 		},
 		{
@@ -178,7 +178,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			want: want{
 				statusCode:   400,
 				contentType:  "text/plain; charset=utf-8",
-				expectedBody: errors.WrongURLFormat + "\n",
+				expectedBody: errors.WrongJSONFormat + "\n",
 			},
 		},
 		{

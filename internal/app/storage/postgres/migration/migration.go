@@ -22,7 +22,7 @@ func createURLTable(db *sql.DB) error {
 		);
 		CREATE INDEX IF NOT EXISTS idx_short_url ON url(short_url);
 	`)
-	
+
 	if err != nil {
 		return err
 	}

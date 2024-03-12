@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/avGenie/url-shortener/internal/app/converter"
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
@@ -25,13 +26,13 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		defer req.Body.Close()
 		if err != nil {
 			zap.L().Error(errors.CannotProcessJSON, zap.Error(err))
-			http.Error(writer, errors.WrongURLFormat, http.StatusBadRequest)
+			http.Error(writer, errors.WrongJSONFormat, http.StatusBadRequest)
 			return
 		}
 
 		if ok := entity.IsValidURL(inputRequest.URL); !ok {
-			zap.L().Error(errors.WrongURLFormat, zap.Error(err))
-			http.Error(writer, errors.WrongURLFormat, http.StatusBadRequest)
+			zap.L().Error(errors.WrongJSONFormat, zap.Error(err))
+			http.Error(writer, errors.WrongJSONFormat, http.StatusBadRequest)
 			return
 		}
 
@@ -65,5 +66,56 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		}
 
 		zap.L().Debug("sending HTTP 200 response")
+	}
+}
+
+func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFunc {
+	return func(writer http.ResponseWriter, req *http.Request) {
+		zap.L().Debug("POST JSON batch handler processing")
+
+		var batch models.ReqBatch
+		err := json.NewDecoder(req.Body).Decode(&batch)
+		if err != nil {
+			zap.L().Error(errors.CannotProcessJSON, zap.Error(err))
+			http.Error(writer, errors.WrongJSONFormat, http.StatusBadRequest)
+			return
+		}
+		defer req.Body.Close()
+
+		urls, err := converter.ConvertBatchReqToURL(batch)
+		if err != nil {
+			zap.L().Error(errors.CannotProcessURL, zap.Error(err))
+			http.Error(writer, errors.WrongJSONFormat, http.StatusBadRequest)
+			return
+		}
+
+		sBatch, err := createStorageBatch(urls)
+		if err != nil {
+			zap.L().Error("error while creating storage batch", zap.Error(err))
+			http.Error(writer, errors.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(req.Context(), timeout)
+		defer cancel()
+
+		resp := saver.SaveBatchURL(ctx, sBatch)
+		if resp.Status == entity.StatusError {
+			zap.L().Error("error while saving url to storage", zap.Error(resp.Error))
+			http.Error(writer, errors.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		outBatch := converter.ConvertStorageBatchToOutBatch(resp.Batch)
+		out, err := json.Marshal(outBatch)
+		if err != nil {
+			zap.L().Error("error while converting storage url to output", zap.Error(resp.Error))
+			http.Error(writer, errors.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
+		writer.Write(out)
 	}
 }

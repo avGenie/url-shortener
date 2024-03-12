@@ -1,7 +1,7 @@
 package main
 
 import (
-		"net/http"
+	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/handlers"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 	cnf := config.InitConfig()
-	
+
 	err := logger.Initialize(cnf)
 	if err != nil {
 		panic(err.Error())
