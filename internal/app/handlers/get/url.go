@@ -20,7 +20,7 @@ type URLGetter interface {
 // # Sends short URL back to the original using from the URL's map
 //
 // Returns 307 status code if processing was successfull, otherwise returns 400.
-func GetURLHandler(getter URLGetter) http.HandlerFunc {
+func URLHandler(getter URLGetter) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		shortURL := chi.URLParam(req, "url")
 

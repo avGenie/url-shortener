@@ -97,7 +97,7 @@ func TestPostHandlerURL(t *testing.T) {
 					Return(test.want.resp)
 			}
 
-			handler := PostHandlerURL(s, test.baseURIPrefix)
+			handler := URLHandler(s, test.baseURIPrefix)
 			handler(writer, request)
 
 			res := writer.Result()
@@ -210,7 +210,7 @@ func TestPostHandlerJSON(t *testing.T) {
 					Return(test.want.resp)
 			}
 
-			handler := PostHandlerJSON(s, test.baseURIPrefix)
+			handler := JSONHandler(s, test.baseURIPrefix)
 			handler(writer, request)
 
 			res := writer.Result()

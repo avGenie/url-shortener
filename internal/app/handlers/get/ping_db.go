@@ -13,7 +13,7 @@ type StoragePinger interface {
 	PingServer(ctx context.Context) entity.Response
 }
 
-func GetPingDB(pinger StoragePinger) http.HandlerFunc {
+func PingDBHandler(pinger StoragePinger) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()

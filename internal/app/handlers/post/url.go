@@ -15,7 +15,7 @@ import (
 // Encodes given URL using base64 encoding scheme and puts it to the URL's map.
 //
 // Returns 201 status code if processing was successfull, otherwise returns 400.
-func PostHandlerURL(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
+func URLHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		zap.L().Debug("POST handler URL processing")
 

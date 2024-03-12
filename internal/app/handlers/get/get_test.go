@@ -57,7 +57,7 @@ func TestGetHandler(t *testing.T) {
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain; charset=utf-8",
 				location:    "",
-				resp: entity.ErrorURLResponse(fmt.Errorf("")),
+				resp:        entity.ErrorURLResponse(fmt.Errorf("")),
 				message:     errors.ShortURLNotInDB + "\n",
 			},
 		},
@@ -69,7 +69,7 @@ func TestGetHandler(t *testing.T) {
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain; charset=utf-8",
 				location:    "",
-				resp: entity.ErrorURLResponse(fmt.Errorf("")),
+				resp:        entity.ErrorURLResponse(fmt.Errorf("")),
 				message:     errors.ShortURLNotInDB + "\n",
 			},
 		},
@@ -88,7 +88,7 @@ func TestGetHandler(t *testing.T) {
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
-			handler := GetURLHandler(s)
+			handler := URLHandler(s)
 			handler(writer, request)
 
 			res := writer.Result()
@@ -157,7 +157,7 @@ func TestGetPingDBHandler(t *testing.T) {
 				Return(test.resp)
 
 			// pingDB(s, writer, request)
-			handler := GetPingDB(s)
+			handler := PingDBHandler(s)
 			handler(writer, request)
 
 			res := writer.Result()

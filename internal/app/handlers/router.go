@@ -16,11 +16,11 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
 
-	r.Post("/", post.PostHandlerURL(db, config.BaseURIPrefix))
-	r.Post("/api/shorten", post.PostHandlerJSON(db, config.BaseURIPrefix))
+	r.Post("/", post.URLHandler(db, config.BaseURIPrefix))
+	r.Post("/api/shorten", post.JSONHandler(db, config.BaseURIPrefix))
 
-	r.Get("/{url}", get.GetURLHandler(db))
-	r.Get("/ping", get.GetPingDB(db))
+	r.Get("/{url}", get.URLHandler(db))
+	r.Get("/ping", get.PingDBHandler(db))
 
 	return r
 }
