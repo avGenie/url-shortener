@@ -271,17 +271,17 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 		model.BatchObject{
 			ID: "practicum_id",
 			InputURL: "https://practicum.yandex.ru/",
-			ShortURL: "http://localhost:8080/42b3e75f",
+			ShortURL: "42b3e75f",
 		},
 		model.BatchObject{
 			ID: "yandex_id",
 			InputURL: "https://yandex.ru/",
-			ShortURL: "http://localhost:8080/77fca595",
+			ShortURL: "77fca595",
 		},
 		model.BatchObject{
 			ID: "google_id",
 			InputURL: "https://www.google.com",
-			ShortURL: "http://localhost:8080/ac6bb669",
+			ShortURL: "ac6bb669",
 		},
 	}
 
