@@ -23,3 +23,10 @@ func (s *LocalStorage) Get(key entity.URL) (entity.URL, bool) {
 func (s *LocalStorage) Add(key, value entity.URL) {
 	s.urls[key] = value
 }
+
+// Adds the given value under the specified key
+func (s *LocalStorage) Merge(inputStorage LocalStorage) {
+	for key, value := range inputStorage.urls {
+		s.urls[key] = value
+	}
+}

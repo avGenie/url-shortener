@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/storage/api/errors"
+	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
 
@@ -42,6 +42,20 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) ent
 	s.mutex.Unlock()
 
 	return entity.OKResponse()
+}
+
+// Adds the given value under the specified key
+func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+	localUrls, err := CreateLocalStorageFromBatch(batch)
+	if err != nil {
+		return model.ErrorBatchResponse(err)
+	}
+
+	s.mutex.Lock()
+	s.urls.Merge(*localUrls)
+	s.mutex.Unlock()
+
+	return model.OKBatchResponse(batch)
 }
 
 func PingServer(ctx context.Context) entity.Response {
