@@ -41,3 +41,10 @@ func ErrorURLResponse(err error) URLResponse {
 		URL:      URL{},
 	}
 }
+
+func ErrorURLValueResponse(err error, url URL) URLResponse {
+	return URLResponse{
+		Response: ErrorResponse(err),
+		URL:      url,
+	}
+}

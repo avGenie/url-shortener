@@ -3,12 +3,16 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/postgres/migration"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -60,7 +64,7 @@ func (s *PostgresStorage) PingServer(ctx context.Context) entity.Response {
 	return entity.OKResponse()
 }
 
-func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.Response {
+func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
 	args := pgx.NamedArgs{
 		"shortUrl": key.String(),
 		"url":      value.String(),
@@ -68,10 +72,20 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) en
 
 	_, err := s.db.ExecContext(ctx, saveQuery, args)
 	if err != nil {
-		return entity.ErrorResponse(fmt.Errorf("unable to insert row to postgres: %w", err))
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+            res := s.GetURL(ctx, key)
+			if res.Status == entity.StatusError {
+				return res
+			}
+
+			return entity.ErrorURLValueResponse(api.ErrURLAlreadyExists, res.URL)
+        }
+		
+		return entity.ErrorURLResponse(fmt.Errorf("unable to insert row to postgres: %w", err))
 	}
 
-	return entity.OKResponse()
+	return entity.OKURLResponse(entity.URL{})
 }
 
 func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {

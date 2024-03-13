@@ -68,6 +68,9 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 // Returns an element from the map
 func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
 	s.mutex.RLock()
+	if s.file == nil {
+		return entity.ErrorURLResponse(api.ErrFileStorageNotOpen)
+	}
 	res, ok := s.cache.Get(key)
 	s.mutex.RUnlock()
 
@@ -81,17 +84,16 @@ func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResp
 // Adds the given value under the specified key
 //
 // Returns `true` if element has been added to the storage.
-func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.Response {
+func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	if _, ok := s.cache.Get(key); ok {
-		return entity.ErrorResponse(api.ErrURLAlreadyExists)
+	if s.file == nil {
+		return entity.ErrorURLResponse(api.ErrFileStorageNotOpen)
 	}
 
-	if s.file == nil {
-		outputErr := fmt.Errorf("file to write is not open")
-		return entity.ErrorResponse(outputErr)
+	if res, ok := s.cache.Get(key); ok {
+		return entity.ErrorURLValueResponse(api.ErrURLAlreadyExists, res)
 	}
 
 	storageRec := &entity.URLRecord{
@@ -103,7 +105,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 	err := s.encoder.Encode(&storageRec)
 	if err != nil {
 		outputErr := fmt.Errorf("error while encoding entity for file commit: %w", err)
-		return entity.ErrorResponse(outputErr)
+		return entity.ErrorURLResponse(outputErr)
 	}
 
 	s.file.Sync()
@@ -111,11 +113,18 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 	s.cache.Add(key, value)
 	s.lastID = storageRec.ID
 
-	return entity.OKResponse()
+	return entity.OKURLResponse(entity.URL{})
 }
 
 // Adds elements from the given batch to the file storage
 func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if s.file == nil {
+		return model.ErrorBatchResponse(api.ErrFileStorageNotOpen)
+	}
+
 	localUrls := local.NewLocalStorage(len(batch))
 	records := make([]entity.URLRecord, 0, len(batch))
 	for _, obj := range batch {
@@ -145,15 +154,13 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model
 		records = append(records, *storageRec)
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	err := s.encoder.Encode(&records)
 	if err != nil {
 		outputErr := fmt.Errorf("error while encoding entity for file commit: %w", err)
 
 		return model.ErrorBatchResponse(outputErr)
 	}
+	s.file.Sync()
 
 	s.cache.Merge(*localUrls)
 
