@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/storage/api/errors"
+	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
 	"go.uber.org/zap"
@@ -90,9 +90,8 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 	}
 
 	if s.file == nil {
-		s.cache.Add(key, value)
-		s.lastID++
-		return entity.OKResponse()
+		outputErr := fmt.Errorf("file to write is not open")
+		return entity.ErrorResponse(outputErr)
 	}
 
 	storageRec := &entity.URLRecord{
@@ -113,6 +112,52 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 	s.lastID = storageRec.ID
 
 	return entity.OKResponse()
+}
+
+// Adds elements from the given batch to the file storage
+func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+	localUrls := local.NewLocalStorage(len(batch))
+	records := make([]entity.URLRecord, 0, len(batch))
+	for _, obj := range batch {
+		key, err := entity.NewURL(obj.ShortURL)
+		if err != nil {
+			outputErr := fmt.Errorf("failed to create input url from batch in file storage: %w", err)
+
+			return model.ErrorBatchResponse(outputErr)
+		}
+		value, err := entity.NewURL(obj.InputURL)
+		if err != nil {
+			outputErr := fmt.Errorf("failed to create short url from batch in file storage: %w", err)
+
+			return model.ErrorBatchResponse(outputErr)
+		}
+
+		localUrls.Add(*key, *value)
+
+		storageRec := &entity.URLRecord{
+			ID:          s.lastID + 1,
+			ShortURL:    key.Path,
+			OriginalURL: value.String(),
+		}
+
+		s.lastID = storageRec.ID
+
+		records = append(records, *storageRec)
+	}
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	err := s.encoder.Encode(&records)
+	if err != nil {
+		outputErr := fmt.Errorf("error while encoding entity for file commit: %w", err)
+
+		return model.ErrorBatchResponse(outputErr)
+	}
+
+	s.cache.Merge(*localUrls)
+
+	return model.OKBatchResponse(batch)
 }
 
 func (s *FileStorage) Close() entity.Response {

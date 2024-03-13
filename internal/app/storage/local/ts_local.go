@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
@@ -44,11 +45,20 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) ent
 	return entity.OKResponse()
 }
 
-// Adds the given value under the specified key
+// Adds elements from the given batch to the local storage
 func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
-	localUrls, err := CreateLocalStorageFromBatch(batch)
-	if err != nil {
-		return model.ErrorBatchResponse(err)
+	localUrls := NewLocalStorage(len(batch))
+	for _, obj := range batch {
+		key, err := entity.NewURL(obj.ShortURL)
+		if err != nil {
+			return model.ErrorBatchResponse(fmt.Errorf("failed to create input url from batch in local storage: %w", err))
+		}
+		value, err := entity.NewURL(obj.InputURL)
+		if err != nil {
+			return model.ErrorBatchResponse(fmt.Errorf("failed to create short url from batch in local storage: %w", err))
+		}
+
+		localUrls.Add(*key, *value)
 	}
 
 	s.mutex.Lock()
