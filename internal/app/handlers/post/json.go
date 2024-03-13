@@ -106,7 +106,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 			return
 		}
 
-		outBatch := converter.ConvertStorageBatchToOutBatch(resp.Batch)
+		outBatch := converter.ConvertStorageBatchToOutBatch(resp.Batch, baseURIPrefix)
 		out, err := json.Marshal(outBatch)
 		if err != nil {
 			zap.L().Error("error while converting storage url to output", zap.Error(resp.Error))
