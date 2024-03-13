@@ -88,7 +88,7 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) m
 	defer stmt.Close()
 
 	for _, obj := range batch {
-		_, err = stmt.ExecContext(ctx, obj.InputURL, obj.ShortURL)
+		_, err = stmt.ExecContext(ctx, obj.ShortURL, obj.InputURL)
 		if err != nil {
 			return model.ErrorBatchResponse(fmt.Errorf("failed to write batch object to postgres: %w", err))
 		}
