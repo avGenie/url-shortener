@@ -18,6 +18,7 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 
 	r.Post("/", post.URLHandler(db, config.BaseURIPrefix))
 	r.Post("/api/shorten", post.JSONHandler(db, config.BaseURIPrefix))
+	r.Post("/api/shorten/batch", post.JSONBatchHandler(db, config.BaseURIPrefix))
 
 	r.Get("/{url}", get.URLHandler(db))
 	r.Get("/ping", get.PingDBHandler(db))

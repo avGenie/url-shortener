@@ -12,6 +12,12 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+const (
+	saveQuery      = `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url)`
+	saveBatchQuery = `INSERT INTO url(short_url, url) VALUES($1, $2)`
+	getQuery       = `SELECT url FROM url WHERE short_url=@shortUrl`
+)
+
 type PostgresStorage struct {
 	model.Storage
 
@@ -55,13 +61,12 @@ func (s *PostgresStorage) PingServer(ctx context.Context) entity.Response {
 }
 
 func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.Response {
-	query := `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url)`
 	args := pgx.NamedArgs{
 		"shortUrl": key.String(),
 		"url":      value.String(),
 	}
 
-	_, err := s.db.ExecContext(ctx, query, args)
+	_, err := s.db.ExecContext(ctx, saveQuery, args)
 	if err != nil {
 		return entity.ErrorResponse(fmt.Errorf("unable to insert row to postgres: %w", err))
 	}
@@ -69,14 +74,37 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) en
 	return entity.OKResponse()
 }
 
+func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return model.ErrorBatchResponse(fmt.Errorf("failed to create transaction in postgres: %w", err))
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, saveBatchQuery)
+	if err != nil {
+		return model.ErrorBatchResponse(fmt.Errorf("failed to prepare query in postgres: %w", err))
+	}
+	defer stmt.Close()
+
+	for _, obj := range batch {
+		_, err = stmt.ExecContext(ctx, obj.InputURL, obj.ShortURL)
+		if err != nil {
+			return model.ErrorBatchResponse(fmt.Errorf("failed to write batch object to postgres: %w", err))
+		}
+	}
+	tx.Commit()
+
+	return model.OKBatchResponse(batch)
+}
+
 func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
-	query := `SELECT url FROM url WHERE short_url=@shortUrl`
 	args := pgx.NamedArgs{
 		"shortUrl": key.String(),
 	}
 
 	var dbURL string
-	row := s.db.QueryRowContext(ctx, query, args)
+	row := s.db.QueryRowContext(ctx, getQuery, args)
 	if row == nil {
 		return entity.ErrorURLResponse(fmt.Errorf("error while postgres request execution"))
 	}
