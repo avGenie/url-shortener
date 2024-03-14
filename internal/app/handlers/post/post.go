@@ -50,12 +50,16 @@ func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPre
 	resp := saver.SaveURL(ctx, *shortURL, *userURL)
 	if resp.Status == entity.StatusError {
 		if errors.Is(resp.Error, storage_err.ErrURLAlreadyExists) {
-			return resp.URL.String(), resp.Error
+			return createOutputPostString(baseURIPrefix, shortURL.String()), resp.Error
 		}
 		return "", resp.Error
 	}
 
-	return fmt.Sprintf("%s/%s", baseURIPrefix, shortURL.String()), nil
+	return createOutputPostString(baseURIPrefix, shortURL.String()), nil
+}
+
+func createOutputPostString(baseURIPrefix, url string) string {
+	return fmt.Sprintf("%s/%s", baseURIPrefix, url)
 }
 
 func createHash(url string) string {

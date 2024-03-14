@@ -92,8 +92,8 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 		return entity.ErrorURLResponse(api.ErrFileStorageNotOpen)
 	}
 
-	if res, ok := s.cache.Get(key); ok {
-		return entity.ErrorURLValueResponse(api.ErrURLAlreadyExists, res)
+	if _, ok := s.cache.Get(key); ok {
+		return entity.ErrorURLResponse(api.ErrURLAlreadyExists)
 	}
 
 	storageRec := &entity.URLRecord{

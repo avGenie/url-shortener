@@ -63,8 +63,8 @@ func TestPostHandlerURL(t *testing.T) {
 			want: want{
 				statusCode:   http.StatusConflict,
 				contentType:  "text/plain; charset=utf-8",
-				expectedBody: "https://yandex.ru/",
-				resp:         createErrorURLValueResponse("https://yandex.ru/"),
+				expectedBody: "http://localhost:8080/42b3e75f",
+				resp:         entity.ErrorURLResponse(storage_err.ErrURLAlreadyExists),
 			},
 		},
 		{
@@ -172,9 +172,9 @@ func TestPostHandlerJSON(t *testing.T) {
 			want: want{
 				statusCode:   http.StatusConflict,
 				contentType:  "application/json",
-				expectedBody: `{"result":"https://yandex.ru/"}` + "\n",
+				expectedBody: `{"result":"http://localhost:8080/42b3e75f"}` + "\n",
 				urlsValue:    "https://practicum.yandex.ru/",
-				resp:         createErrorURLValueResponse("https://yandex.ru/"),
+				resp:         entity.ErrorURLResponse(storage_err.ErrURLAlreadyExists),
 			},
 		},
 		{
@@ -366,9 +366,4 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			assert.JSONEq(t, test.want.expectedBody, string(userResult))
 		})
 	}
-}
-
-func createErrorURLValueResponse(data string) entity.URLResponse {
-	url, _ := entity.NewURL(data)
-	return entity.ErrorURLValueResponse(storage_err.ErrURLAlreadyExists, *url)
 }

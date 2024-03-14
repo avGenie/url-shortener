@@ -74,12 +74,7 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) en
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-            res := s.GetURL(ctx, key)
-			if res.Status == entity.StatusError {
-				return res
-			}
-
-			return entity.ErrorURLValueResponse(api.ErrURLAlreadyExists, res.URL)
+			return entity.ErrorURLResponse(api.ErrURLAlreadyExists)
         }
 		
 		return entity.ErrorURLResponse(fmt.Errorf("unable to insert row to postgres: %w", err))

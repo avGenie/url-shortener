@@ -41,9 +41,9 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) ent
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	res, ok := s.urls.Get(key)
+	_, ok := s.urls.Get(key)
 	if ok {
-		return entity.ErrorURLValueResponse(api.ErrURLAlreadyExists, res)
+		return entity.ErrorURLResponse(api.ErrURLAlreadyExists)
 	}
 
 	s.urls.Add(key, value)
