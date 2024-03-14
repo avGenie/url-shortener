@@ -1,7 +1,6 @@
 package post
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +10,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/handlers/post/mock"
+	storage_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -29,62 +29,71 @@ func TestPostHandlerURL(t *testing.T) {
 	s := mock.NewMockURLSaver(ctrl)
 
 	type want struct {
-		statusCode  int
-		contentType string
-		message     string
-		resp        entity.Response
+		statusCode   int
+		contentType  string
+		expectedBody string
+		resp         entity.URLResponse
 	}
 	tests := []struct {
 		name          string
 		request       string
-		URL           string
+		body          string
 		baseURIPrefix string
-		isError       bool
 		want          want
 	}{
 		{
 			name:          "correct input data",
 			request:       "/",
-			URL:           "https://practicum.yandex.ru/",
+			body:          "https://practicum.yandex.ru/",
 			baseURIPrefix: baseURIPrefix,
-			isError:       false,
 
 			want: want{
-				statusCode:  201,
-				contentType: "text/plain; charset=utf-8",
-				message:     "42b3e75f",
-				resp:        entity.OKResponse(),
+				statusCode:   http.StatusCreated,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: "http://localhost:8080/42b3e75f",
+				resp:         entity.OKURLResponse(entity.URL{}),
+			},
+		},
+		{
+			name:          "url already exists",
+			request:       "/",
+			body:          "https://practicum.yandex.ru/",
+			baseURIPrefix: baseURIPrefix,
+
+			want: want{
+				statusCode:   http.StatusConflict,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: "https://yandex.ru/",
+				resp:         createErrorURLValueResponse("https://yandex.ru/"),
 			},
 		},
 		{
 			name:          "empty URL",
 			request:       "/",
 			baseURIPrefix: baseURIPrefix,
-			isError:       true,
 
 			want: want{
-				statusCode:  400,
-				contentType: "text/plain; charset=utf-8",
-				message:     errors.WrongURLFormat + "\n",
+				statusCode:   http.StatusBadRequest,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: errors.WrongURLFormat + "\n",
 			},
 		},
 		{
 			name:    "empty base URI prefix",
 			request: "/",
-			URL:     "https://practicum.yandex.ru/",
-			isError: true,
+			body:    "https://practicum.yandex.ru/",
 
 			want: want{
-				statusCode:  500,
-				contentType: "text/plain; charset=utf-8",
-				message:     errors.InternalServerError + "\n",
+				statusCode:   http.StatusInternalServerError,
+				contentType:  "text/plain; charset=utf-8",
+				expectedBody: errors.InternalServerError + "\n",
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.URL))
+			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
 			if test.want.resp.Status == "" {
@@ -112,13 +121,7 @@ func TestPostHandlerURL(t *testing.T) {
 			err = res.Body.Close()
 			require.NoError(t, err)
 
-			if test.isError {
-				assert.Equal(t, test.want.message, string(userResult))
-				return
-			}
-
-			requiredOutput := fmt.Sprintf("http://%s/%s", netAddr, test.want.message)
-			assert.Equal(t, requiredOutput, string(userResult))
+			assert.Equal(t, test.want.expectedBody, string(userResult))
 		})
 	}
 }
@@ -134,7 +137,7 @@ func TestPostHandlerJSON(t *testing.T) {
 		contentType  string
 		expectedBody string
 		urlsValue    string
-		resp         entity.Response
+		resp         entity.URLResponse
 	}
 	tests := []struct {
 		name          string
@@ -152,11 +155,26 @@ func TestPostHandlerJSON(t *testing.T) {
 			urlsKey:       "42b3e75f",
 
 			want: want{
-				statusCode:   201,
+				statusCode:   http.StatusCreated,
 				contentType:  "application/json",
 				expectedBody: `{"result":"http://localhost:8080/42b3e75f"}` + "\n",
 				urlsValue:    "https://practicum.yandex.ru/",
-				resp:         entity.OKResponse(),
+				resp:         entity.OKURLResponse(entity.URL{}),
+			},
+		},
+		{
+			name:          "url already exists",
+			request:       "/",
+			body:          `{"url":"https://practicum.yandex.ru/"}`,
+			baseURIPrefix: baseURIPrefix,
+			urlsKey:       "42b3e75f",
+
+			want: want{
+				statusCode:   http.StatusConflict,
+				contentType:  "application/json",
+				expectedBody: `{"result":"https://yandex.ru/"}` + "\n",
+				urlsValue:    "https://practicum.yandex.ru/",
+				resp:         createErrorURLValueResponse("https://yandex.ru/"),
 			},
 		},
 		{
@@ -166,7 +184,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			baseURIPrefix: baseURIPrefix,
 
 			want: want{
-				statusCode:   400,
+				statusCode:   http.StatusBadRequest,
 				contentType:  "text/plain; charset=utf-8",
 				expectedBody: errors.WrongJSONFormat + "\n",
 			},
@@ -177,7 +195,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			body:    "https://practicum.yandex.ru/",
 
 			want: want{
-				statusCode:   400,
+				statusCode:   http.StatusBadRequest,
 				contentType:  "text/plain; charset=utf-8",
 				expectedBody: errors.WrongJSONFormat + "\n",
 			},
@@ -188,7 +206,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			body:    `{"url":"https://practicum.yandex.ru"}`,
 
 			want: want{
-				statusCode:   500,
+				statusCode:   http.StatusInternalServerError,
 				contentType:  "text/plain; charset=utf-8",
 				expectedBody: errors.InternalServerError + "\n",
 			},
@@ -269,17 +287,17 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 
 	batchResponse := model.Batch{
 		model.BatchObject{
-			ID: "practicum_id",
+			ID:       "practicum_id",
 			InputURL: "https://practicum.yandex.ru/",
 			ShortURL: "42b3e75f",
 		},
 		model.BatchObject{
-			ID: "yandex_id",
+			ID:       "yandex_id",
 			InputURL: "https://yandex.ru/",
 			ShortURL: "77fca595",
 		},
 		model.BatchObject{
-			ID: "google_id",
+			ID:       "google_id",
 			InputURL: "https://www.google.com",
 			ShortURL: "ac6bb669",
 		},
@@ -348,4 +366,9 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			assert.JSONEq(t, test.want.expectedBody, string(userResult))
 		})
 	}
+}
+
+func createErrorURLValueResponse(data string) entity.URLResponse {
+	url, _ := entity.NewURL(data)
+	return entity.ErrorURLValueResponse(storage_err.ErrURLAlreadyExists, *url)
 }
