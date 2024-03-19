@@ -54,14 +54,13 @@ func (s *PostgresStorage) Close() entity.Response {
 	return entity.OKResponse()
 }
 
-func (s *PostgresStorage) PingServer(ctx context.Context) entity.Response {
+func (s *PostgresStorage) PingServer(ctx context.Context) error {
 	err := s.db.PingContext(ctx)
 	if err != nil {
-		outErr := fmt.Errorf("couldn't ping postgres server: %w", err)
-		return entity.ErrorResponse(outErr)
+		return fmt.Errorf("couldn't ping postgres server: %w", err)
 	}
 
-	return entity.OKResponse()
+	return nil
 }
 
 func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {

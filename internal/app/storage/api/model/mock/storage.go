@@ -66,10 +66,10 @@ func (mr *MockStorageMockRecorder) GetURL(ctx, key interface{}) *gomock.Call {
 }
 
 // PingServer mocks base method.
-func (m *MockStorage) PingServer(ctx context.Context) entity.Response {
+func (m *MockStorage) PingServer(ctx context.Context) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PingServer", ctx)
-	ret0, _ := ret[0].(entity.Response)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 

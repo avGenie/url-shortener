@@ -128,12 +128,10 @@ func TestGetPingDBHandler(t *testing.T) {
 	}
 	tests := []struct {
 		name string
-		resp entity.Response
 		want want
 	}{
 		{
 			name: "successfull ping",
-			resp: entity.OKResponse(),
 
 			want: want{
 				statusCode: http.StatusOK,
@@ -142,7 +140,6 @@ func TestGetPingDBHandler(t *testing.T) {
 		},
 		{
 			name: "fallen ping",
-			resp: entity.ErrorResponse(fmt.Errorf("")),
 
 			want: want{
 				statusCode: http.StatusInternalServerError,
@@ -158,7 +155,7 @@ func TestGetPingDBHandler(t *testing.T) {
 
 			s.EXPECT().
 				PingServer(gomock.Any()).
-				Return(test.resp)
+				Return(test.want.err)
 
 			// pingDB(s, writer, request)
 			handler := PingDBHandler(s)

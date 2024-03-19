@@ -8,7 +8,6 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entity "github.com/avGenie/url-shortener/internal/app/entity"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,10 +35,10 @@ func (m *MockStoragePinger) EXPECT() *MockStoragePingerMockRecorder {
 }
 
 // PingServer mocks base method.
-func (m *MockStoragePinger) PingServer(ctx context.Context) entity.Response {
+func (m *MockStoragePinger) PingServer(ctx context.Context) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PingServer", ctx)
-	ret0, _ := ret[0].(entity.Response)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 

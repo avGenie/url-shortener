@@ -179,12 +179,12 @@ func (s *FileStorage) Close() entity.Response {
 	return entity.OKResponse()
 }
 
-func (s *FileStorage) PingServer(ctx context.Context) entity.Response {
+func (s *FileStorage) PingServer(ctx context.Context) error {
 	if s.file == nil {
-		return entity.ErrorResponse(api.ErrFileStorageNotOpen)
+		return fmt.Errorf("error while ping file storage: %w", api.ErrFileStorageNotOpen)
 	}
 
-	return entity.OKResponse()
+	return nil
 }
 
 // Fills cache from the DB storage file

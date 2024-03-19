@@ -5,12 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/avGenie/url-shortener/internal/app/entity"
 	"go.uber.org/zap"
 )
 
 type StoragePinger interface {
-	PingServer(ctx context.Context) entity.Response
+	PingServer(ctx context.Context) error
 }
 
 func PingDBHandler(pinger StoragePinger) http.HandlerFunc {
@@ -18,15 +17,15 @@ func PingDBHandler(pinger StoragePinger) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		response := pinger.PingServer(ctx)
-		if response.Status == entity.StatusError {
+		err := pinger.PingServer(ctx)
+		if err != nil {
 			switch {
-			case errors.Is(response.Error, context.Canceled):
-				zap.L().Error("context canceled", zap.String("error", response.Error.Error()))
-			case errors.Is(response.Error, context.DeadlineExceeded):
-				zap.L().Error("context deadline exceeded", zap.String("error", response.Error.Error()))
+			case errors.Is(err, context.Canceled):
+				zap.L().Error("context canceled", zap.String("error", err.Error()))
+			case errors.Is(err, context.DeadlineExceeded):
+				zap.L().Error("context deadline exceeded", zap.String("error", err.Error()))
 			default:
-				zap.L().Error(response.Error.Error())
+				zap.L().Error(err.Error())
 			}
 			writer.WriteHeader(http.StatusInternalServerError)
 			return

@@ -74,8 +74,8 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) mo
 	return model.OKBatchResponse(batch)
 }
 
-func PingServer(ctx context.Context) entity.Response {
-	return entity.OKResponse()
+func PingServer(ctx context.Context) error {
+	return nil
 }
 
 func Close() entity.Response {
