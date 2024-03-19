@@ -9,7 +9,7 @@ import (
 type Storage interface {
 	Close() entity.Response
 	PingServer(ctx context.Context) error
-	SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse
+	SaveURL(ctx context.Context, key, value entity.URL) error
 	SaveBatchURL(ctx context.Context, batch Batch) BatchResponse
 	GetURL(ctx context.Context, key entity.URL) (*entity.URL, error)
 }

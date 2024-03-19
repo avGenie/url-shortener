@@ -1,13 +1,13 @@
 package post
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/handlers/post/mock"
 	storage_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
@@ -32,7 +32,8 @@ func TestPostHandlerURL(t *testing.T) {
 		statusCode   int
 		contentType  string
 		expectedBody string
-		resp         entity.URLResponse
+		expectedErr  error
+		isSaveURL    bool
 	}
 	tests := []struct {
 		name          string
@@ -51,7 +52,8 @@ func TestPostHandlerURL(t *testing.T) {
 				statusCode:   http.StatusCreated,
 				contentType:  "text/plain; charset=utf-8",
 				expectedBody: "http://localhost:8080/42b3e75f",
-				resp:         entity.OKURLResponse(entity.URL{}),
+				expectedErr:  nil,
+				isSaveURL:    true,
 			},
 		},
 		{
@@ -64,7 +66,8 @@ func TestPostHandlerURL(t *testing.T) {
 				statusCode:   http.StatusConflict,
 				contentType:  "text/plain; charset=utf-8",
 				expectedBody: "http://localhost:8080/42b3e75f",
-				resp:         entity.ErrorURLResponse(storage_err.ErrURLAlreadyExists),
+				expectedErr:  fmt.Errorf("error: %w", storage_err.ErrURLAlreadyExists),
+				isSaveURL:    true,
 			},
 		},
 		{
@@ -96,7 +99,7 @@ func TestPostHandlerURL(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
-			if test.want.resp.Status == "" {
+			if test.want.isSaveURL == false {
 				s.EXPECT().
 					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
@@ -104,7 +107,7 @@ func TestPostHandlerURL(t *testing.T) {
 				s.EXPECT().
 					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(test.want.resp)
+					Return(test.want.expectedErr)
 			}
 
 			handler := URLHandler(s, test.baseURIPrefix)
@@ -137,7 +140,8 @@ func TestPostHandlerJSON(t *testing.T) {
 		contentType  string
 		expectedBody string
 		urlsValue    string
-		resp         entity.URLResponse
+		expectedErr  error
+		isSaveURL    bool
 	}
 	tests := []struct {
 		name          string
@@ -159,7 +163,8 @@ func TestPostHandlerJSON(t *testing.T) {
 				contentType:  "application/json",
 				expectedBody: `{"result":"http://localhost:8080/42b3e75f"}` + "\n",
 				urlsValue:    "https://practicum.yandex.ru/",
-				resp:         entity.OKURLResponse(entity.URL{}),
+				expectedErr:  nil,
+				isSaveURL:    true,
 			},
 		},
 		{
@@ -174,7 +179,8 @@ func TestPostHandlerJSON(t *testing.T) {
 				contentType:  "application/json",
 				expectedBody: `{"result":"http://localhost:8080/42b3e75f"}` + "\n",
 				urlsValue:    "https://practicum.yandex.ru/",
-				resp:         entity.ErrorURLResponse(storage_err.ErrURLAlreadyExists),
+				expectedErr:  fmt.Errorf("error: %w", storage_err.ErrURLAlreadyExists),
+				isSaveURL:    true,
 			},
 		},
 		{
@@ -218,7 +224,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
-			if test.want.resp.Status == "" {
+			if test.want.isSaveURL == false{
 				s.EXPECT().
 					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
@@ -226,7 +232,7 @@ func TestPostHandlerJSON(t *testing.T) {
 				s.EXPECT().
 					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(test.want.resp)
+					Return(test.want.expectedErr)
 			}
 
 			handler := JSONHandler(s, test.baseURIPrefix)

@@ -22,7 +22,7 @@ const (
 )
 
 type URLSaver interface {
-	SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse
+	SaveURL(ctx context.Context, key, value entity.URL) error
 }
 
 type URLBatchSaver interface {
@@ -47,12 +47,12 @@ func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPre
 		return "", err
 	}
 
-	resp := saver.SaveURL(ctx, *shortURL, *userURL)
-	if resp.Status == entity.StatusError {
-		if errors.Is(resp.Error, storage_err.ErrURLAlreadyExists) {
-			return createOutputPostString(baseURIPrefix, shortURL.String()), resp.Error
+	err = saver.SaveURL(ctx, *shortURL, *userURL)
+	if err != nil {
+		if errors.Is(err, storage_err.ErrURLAlreadyExists) {
+			return createOutputPostString(baseURIPrefix, shortURL.String()), err
 		}
-		return "", resp.Error
+		return "", err
 	}
 
 	return createOutputPostString(baseURIPrefix, shortURL.String()), nil

@@ -63,7 +63,7 @@ func (s *PostgresStorage) PingServer(ctx context.Context) error {
 	return nil
 }
 
-func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
+func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
 	args := pgx.NamedArgs{
 		"shortUrl": key.String(),
 		"url":      value.String(),
@@ -73,13 +73,13 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) en
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return entity.ErrorURLResponse(api.ErrURLAlreadyExists)
+			return fmt.Errorf("error while save url to postgres: %w", api.ErrURLAlreadyExists)
         }
 		
-		return entity.ErrorURLResponse(fmt.Errorf("unable to insert row to postgres: %w", err))
+		return fmt.Errorf("unable to insert row to postgres: %w", err)
 	}
 
-	return entity.OKURLResponse(entity.URL{})
+	return nil
 }
 
 func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {

@@ -37,18 +37,18 @@ func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) (*entity.UR
 }
 
 // Adds the given value under the specified key
-func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
+func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	_, ok := s.urls.Get(key)
 	if ok {
-		return entity.ErrorURLResponse(api.ErrURLAlreadyExists)
+		return fmt.Errorf("error while save url to ts local storage: %w", api.ErrURLAlreadyExists)
 	}
 
 	s.urls.Add(key, value)
 
-	return entity.OKURLResponse(entity.URL{})
+	return nil
 }
 
 // Adds elements from the given batch to the local storage

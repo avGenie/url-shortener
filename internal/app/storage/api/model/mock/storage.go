@@ -94,10 +94,10 @@ func (mr *MockStorageMockRecorder) SaveBatchURL(ctx, batch interface{}) *gomock.
 }
 
 // SaveURL mocks base method.
-func (m *MockStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
+func (m *MockStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveURL", ctx, key, value)
-	ret0, _ := ret[0].(entity.URLResponse)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 

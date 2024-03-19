@@ -37,10 +37,10 @@ func (m *MockURLSaver) EXPECT() *MockURLSaverMockRecorder {
 }
 
 // SaveURL mocks base method.
-func (m *MockURLSaver) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
+func (m *MockURLSaver) SaveURL(ctx context.Context, key, value entity.URL) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveURL", ctx, key, value)
-	ret0, _ := ret[0].(entity.URLResponse)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 

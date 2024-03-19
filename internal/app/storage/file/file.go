@@ -84,16 +84,16 @@ func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, 
 // Adds the given value under the specified key
 //
 // Returns `true` if element has been added to the storage.
-func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
+func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	if s.file == nil {
-		return entity.ErrorURLResponse(api.ErrFileStorageNotOpen)
+		return fmt.Errorf("error while save url to file storage: %w", api.ErrFileStorageNotOpen)
 	}
 
 	if _, ok := s.cache.Get(key); ok {
-		return entity.ErrorURLResponse(api.ErrURLAlreadyExists)
+		return fmt.Errorf("error while save url to file storage: %w", api.ErrURLAlreadyExists)
 	}
 
 	storageRec := &entity.URLRecord{
@@ -104,8 +104,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 
 	err := s.encoder.Encode(&storageRec)
 	if err != nil {
-		outputErr := fmt.Errorf("error while encoding entity for file commit: %w", err)
-		return entity.ErrorURLResponse(outputErr)
+		return fmt.Errorf("error while encoding entity for file commit: %w", err)
 	}
 
 	s.file.Sync()
@@ -113,7 +112,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) entity
 	s.cache.Add(key, value)
 	s.lastID = storageRec.ID
 
-	return entity.OKURLResponse(entity.URL{})
+	return nil
 }
 
 // Adds elements from the given batch to the file storage
