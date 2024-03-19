@@ -11,5 +11,5 @@ type Storage interface {
 	PingServer(ctx context.Context) entity.Response
 	SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse
 	SaveBatchURL(ctx context.Context, batch Batch) BatchResponse
-	GetURL(ctx context.Context, key entity.URL) entity.URLResponse
+	GetURL(ctx context.Context, key entity.URL) (*entity.URL, error)
 }

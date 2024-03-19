@@ -66,19 +66,19 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 }
 
 // Returns an element from the map
-func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
+func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	if s.file == nil {
-		return entity.ErrorURLResponse(api.ErrFileStorageNotOpen)
+		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
 	}
 	res, ok := s.cache.Get(key)
 	s.mutex.RUnlock()
 
 	if !ok {
-		return entity.ErrorURLResponse(api.ErrShortURLNotFound)
+		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrShortURLNotFound)
 	}
 
-	return entity.OKURLResponse(res)
+	return &res, nil
 }
 
 // Adds the given value under the specified key

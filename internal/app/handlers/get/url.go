@@ -12,7 +12,7 @@ import (
 )
 
 type URLGetter interface {
-	GetURL(ctx context.Context, key entity.URL) entity.URLResponse
+	GetURL(ctx context.Context, key entity.URL) (*entity.URL, error)
 }
 
 // Processes GET request. Sends the source address at the given short address
@@ -38,23 +38,22 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 			return
 		}
 
-		resp := getter.GetURL(ctx, *eShortURL)
-		if resp.Status == entity.StatusError {
+		url, err := getter.GetURL(ctx, *eShortURL)
+		if err != nil {
 			zap.L().Error(
 				"error while getting url",
-				zap.String("error", resp.Error.Error()),
+				zap.String("error", err.Error()),
 				zap.String("short_url", shortURL),
-				zap.String("decoded_url", resp.URL.String()),
 			)
 
 			http.Error(writer, errors.ShortURLNotInDB, http.StatusBadRequest)
 			return
 		}
 
-		zap.L().Info("url has been decoded succeessfully", zap.String("decoded url", resp.URL.String()))
+		zap.L().Info("url has been decoded succeessfully", zap.String("decoded url", url.String()))
 
 		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		writer.Header().Set("Location", resp.URL.String())
+		writer.Header().Set("Location", url.String())
 		writer.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

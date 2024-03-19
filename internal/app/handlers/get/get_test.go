@@ -29,7 +29,8 @@ func TestGetHandler(t *testing.T) {
 		statusCode  int
 		contentType string
 		location    string
-		resp        entity.URLResponse
+		expectErr   error
+		expectURL   *entity.URL
 		message     string
 	}
 	tests := []struct {
@@ -45,7 +46,8 @@ func TestGetHandler(t *testing.T) {
 				statusCode:  http.StatusTemporaryRedirect,
 				contentType: "text/plain; charset=utf-8",
 				location:    "https://practicum.yandex.ru/",
-				resp:        makeOKURLResponse("https://practicum.yandex.ru/"),
+				expectURL:   makeOKURLResponse("https://practicum.yandex.ru/"),
+				expectErr:   nil,
 				message:     "",
 			},
 		},
@@ -57,7 +59,8 @@ func TestGetHandler(t *testing.T) {
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain; charset=utf-8",
 				location:    "",
-				resp:        entity.ErrorURLResponse(fmt.Errorf("")),
+				expectURL:   nil,
+				expectErr:   fmt.Errorf(""),
 				message:     errors.ShortURLNotInDB + "\n",
 			},
 		},
@@ -69,7 +72,8 @@ func TestGetHandler(t *testing.T) {
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain; charset=utf-8",
 				location:    "",
-				resp:        entity.ErrorURLResponse(fmt.Errorf("")),
+				expectURL:   nil,
+				expectErr:   fmt.Errorf(""),
 				message:     errors.ShortURLNotInDB + "\n",
 			},
 		},
@@ -84,7 +88,7 @@ func TestGetHandler(t *testing.T) {
 			rctx.URLParams.Add("url", test.request)
 
 			s.EXPECT().GetURL(gomock.Any(), gomock.Any()).
-				Return(test.want.resp)
+				Return(test.want.expectURL, test.want.expectErr)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
 
@@ -170,12 +174,8 @@ func TestGetPingDBHandler(t *testing.T) {
 	}
 }
 
-func makeOKURLResponse(URL string) entity.URLResponse {
-	var outURL entity.URL
-	eURL, err := entity.ParseURL(URL)
-	if err == nil {
-		outURL = *eURL
-	}
+func makeOKURLResponse(URL string) *entity.URL {
+	outURL, _ := entity.NewURL(URL)
 
-	return entity.OKURLResponse(outURL)
+	return outURL
 }

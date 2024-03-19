@@ -107,7 +107,7 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) m
 	return model.OKBatchResponse(batch)
 }
 
-func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
+func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
 	args := pgx.NamedArgs{
 		"shortUrl": key.String(),
 	}
@@ -115,18 +115,22 @@ func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) entity.URL
 	var dbURL string
 	row := s.db.QueryRowContext(ctx, getQuery, args)
 	if row == nil {
-		return entity.ErrorURLResponse(fmt.Errorf("error while postgres request execution"))
+		return nil, fmt.Errorf("error while postgres request execution")
+	}
+
+	if row.Err() != nil {
+		return nil, fmt.Errorf("error while postgres request execution: %w", row.Err())
 	}
 
 	err := row.Scan(&dbURL)
 	if err != nil {
-		return entity.ErrorURLResponse(fmt.Errorf("error while processing response row in postgres: %w", err))
+		return nil, fmt.Errorf("error while processing response row in postgres: %w", err)
 	}
 
 	url, err := entity.NewURL(dbURL)
 	if err != nil {
-		return entity.ErrorURLResponse(fmt.Errorf("error while creating url in postgres: %w", err))
+		return nil, fmt.Errorf("error while creating url in postgres: %w", err)
 	}
 
-	return entity.OKURLResponse(*url)
+	return url, nil
 }

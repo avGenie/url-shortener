@@ -24,16 +24,16 @@ func NewTSLocalStorage(size int) *TSLocalStorage {
 }
 
 // Returns an element from the map
-func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
+func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	res, ok := s.urls.Get(key)
 	s.mutex.RUnlock()
 
 	if !ok {
-		return entity.ErrorURLResponse(api.ErrShortURLNotFound)
+		return nil, fmt.Errorf("error while getting url from ts local storage: %w", api.ErrShortURLNotFound)
 	}
 
-	return entity.OKURLResponse(res)
+	return &res, nil
 }
 
 // Adds the given value under the specified key

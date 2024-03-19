@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	entity "github.com/avGenie/url-shortener/internal/app/entity"
+	model "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -50,11 +51,12 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 }
 
 // GetURL mocks base method.
-func (m *MockStorage) GetURL(ctx context.Context, key entity.URL) entity.URLResponse {
+func (m *MockStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetURL", ctx, key)
-	ret0, _ := ret[0].(entity.URLResponse)
-	return ret0
+	ret0, _ := ret[0].(*entity.URL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetURL indicates an expected call of GetURL.
@@ -77,11 +79,25 @@ func (mr *MockStorageMockRecorder) PingServer(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingServer", reflect.TypeOf((*MockStorage)(nil).PingServer), ctx)
 }
 
+// SaveBatchURL mocks base method.
+func (m *MockStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveBatchURL", ctx, batch)
+	ret0, _ := ret[0].(model.BatchResponse)
+	return ret0
+}
+
+// SaveBatchURL indicates an expected call of SaveBatchURL.
+func (mr *MockStorageMockRecorder) SaveBatchURL(ctx, batch interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchURL", reflect.TypeOf((*MockStorage)(nil).SaveBatchURL), ctx, batch)
+}
+
 // SaveURL mocks base method.
-func (m *MockStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.Response {
+func (m *MockStorage) SaveURL(ctx context.Context, key, value entity.URL) entity.URLResponse {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveURL", ctx, key, value)
-	ret0, _ := ret[0].(entity.Response)
+	ret0, _ := ret[0].(entity.URLResponse)
 	return ret0
 }
 
