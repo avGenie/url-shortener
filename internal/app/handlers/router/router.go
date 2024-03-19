@@ -3,9 +3,9 @@ package handlers
 import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
-	"github.com/avGenie/url-shortener/internal/app/handlers/get"
-	"github.com/avGenie/url-shortener/internal/app/handlers/post"
 	"github.com/avGenie/url-shortener/internal/app/logger"
+	get "github.com/avGenie/url-shortener/internal/app/handlers/get"
+	post "github.com/avGenie/url-shortener/internal/app/handlers/post"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/go-chi/chi/v5"
 )
