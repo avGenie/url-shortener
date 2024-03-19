@@ -26,7 +26,7 @@ type URLSaver interface {
 }
 
 type URLBatchSaver interface {
-	SaveBatchURL(ctx context.Context, batch storage.Batch) storage.BatchResponse
+	SaveBatchURL(ctx context.Context, batch storage.Batch) (storage.Batch, error)
 }
 
 func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPrefix string) (string, error) {

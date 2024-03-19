@@ -80,11 +80,12 @@ func (mr *MockStorageMockRecorder) PingServer(ctx interface{}) *gomock.Call {
 }
 
 // SaveBatchURL mocks base method.
-func (m *MockStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+func (m *MockStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveBatchURL", ctx, batch)
-	ret0, _ := ret[0].(model.BatchResponse)
-	return ret0
+	ret0, _ := ret[0].(model.Batch)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SaveBatchURL indicates an expected call of SaveBatchURL.

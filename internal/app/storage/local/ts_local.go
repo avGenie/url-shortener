@@ -52,16 +52,16 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) err
 }
 
 // Adds elements from the given batch to the local storage
-func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
 	localUrls := NewLocalStorage(len(batch))
 	for _, obj := range batch {
 		key, err := entity.NewURL(obj.ShortURL)
 		if err != nil {
-			return model.ErrorBatchResponse(fmt.Errorf("failed to create input url from batch in local storage: %w", err))
+			return nil, fmt.Errorf("failed to create input url from batch in local storage: %w", err)
 		}
 		value, err := entity.NewURL(obj.InputURL)
 		if err != nil {
-			return model.ErrorBatchResponse(fmt.Errorf("failed to create short url from batch in local storage: %w", err))
+			return nil, fmt.Errorf("failed to create short url from batch in local storage: %w", err)
 		}
 
 		localUrls.Add(*key, *value)
@@ -71,7 +71,7 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) mo
 	s.urls.Merge(*localUrls)
 	s.mutex.Unlock()
 
-	return model.OKBatchResponse(batch)
+	return batch, nil
 }
 
 func PingServer(ctx context.Context) error {

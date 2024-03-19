@@ -116,12 +116,12 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) error 
 }
 
 // Adds elements from the given batch to the file storage
-func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	if s.file == nil {
-		return model.ErrorBatchResponse(api.ErrFileStorageNotOpen)
+		return nil, api.ErrFileStorageNotOpen
 	}
 
 	localUrls := local.NewLocalStorage(len(batch))
@@ -129,15 +129,11 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model
 	for _, obj := range batch {
 		key, err := entity.NewURL(obj.ShortURL)
 		if err != nil {
-			outputErr := fmt.Errorf("failed to create input url from batch in file storage: %w", err)
-
-			return model.ErrorBatchResponse(outputErr)
+			return nil, fmt.Errorf("failed to create input url from batch in file storage: %w", err)
 		}
 		value, err := entity.NewURL(obj.InputURL)
 		if err != nil {
-			outputErr := fmt.Errorf("failed to create short url from batch in file storage: %w", err)
-
-			return model.ErrorBatchResponse(outputErr)
+			return nil, fmt.Errorf("failed to create short url from batch in file storage: %w", err)
 		}
 
 		localUrls.Add(*key, *value)
@@ -155,15 +151,13 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model
 
 	err := s.encoder.Encode(&records)
 	if err != nil {
-		outputErr := fmt.Errorf("error while encoding entity for file commit: %w", err)
-
-		return model.ErrorBatchResponse(outputErr)
+		return nil, fmt.Errorf("error while encoding entity for file commit: %w", err)
 	}
 	s.file.Sync()
 
 	s.cache.Merge(*localUrls)
 
-	return model.OKBatchResponse(batch)
+	return batch, nil
 }
 
 func (s *FileStorage) Close() entity.Response {

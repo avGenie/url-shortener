@@ -112,17 +112,17 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		resp := saver.SaveBatchURL(ctx, sBatch)
-		if resp.Status == entity.StatusError {
-			zap.L().Error("error while saving url to storage", zap.Error(resp.Error))
+		savedBatch, err := saver.SaveBatchURL(ctx, sBatch)
+		if err != nil {
+			zap.L().Error("error while saving url to storage", zap.Error(err))
 			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
 			return
 		}
 
-		outBatch := converter.ConvertStorageBatchToOutBatch(resp.Batch, baseURIPrefix)
+		outBatch := converter.ConvertStorageBatchToOutBatch(savedBatch, baseURIPrefix)
 		out, err := json.Marshal(outBatch)
 		if err != nil {
-			zap.L().Error("error while converting storage url to output", zap.Error(resp.Error))
+			zap.L().Error("error while converting storage url to output", zap.Error(err))
 			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
 			return
 		}

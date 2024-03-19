@@ -82,28 +82,28 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) er
 	return nil
 }
 
-func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) model.BatchResponse {
+func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
-		return model.ErrorBatchResponse(fmt.Errorf("failed to create transaction in postgres: %w", err))
+		return nil, fmt.Errorf("failed to create transaction in postgres: %w", err)
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, saveBatchQuery)
 	if err != nil {
-		return model.ErrorBatchResponse(fmt.Errorf("failed to prepare query in postgres: %w", err))
+		return nil, fmt.Errorf("failed to prepare query in postgres: %w", err)
 	}
 	defer stmt.Close()
 
 	for _, obj := range batch {
 		_, err = stmt.ExecContext(ctx, obj.ShortURL, obj.InputURL)
 		if err != nil {
-			return model.ErrorBatchResponse(fmt.Errorf("failed to write batch object to postgres: %w", err))
+			return nil, fmt.Errorf("failed to write batch object to postgres: %w", err)
 		}
 	}
 	tx.Commit()
 
-	return model.OKBatchResponse(batch)
+	return batch, nil
 }
 
 func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {

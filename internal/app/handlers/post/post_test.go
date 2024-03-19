@@ -224,7 +224,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
-			if test.want.isSaveURL == false{
+			if test.want.isSaveURL == false {
 				s.EXPECT().
 					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
@@ -310,11 +310,12 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 	}
 
 	type want struct {
-		statusCode   int
-		contentType  string
-		expectedBody string
-		urlsValue    string
-		resp         model.BatchResponse
+		statusCode    int
+		contentType   string
+		expectedBody  string
+		urlsValue     string
+		expectedBatch model.Batch
+		expectedErr   error
 	}
 	tests := []struct {
 		name          string
@@ -334,7 +335,8 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 				contentType:  "application/json",
 				expectedBody: outputBatch,
 				urlsValue:    "https://practicum.yandex.ru/",
-				resp:         model.OKBatchResponse(batchResponse),
+				expectedBatch: batchResponse,
+				expectedErr:   nil,
 			},
 		},
 	}
@@ -344,16 +346,10 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
-			if test.want.resp.Status == "" {
-				s.EXPECT().
-					SaveBatchURL(gomock.Any(), gomock.Any()).
-					Times(0)
-			} else {
-				s.EXPECT().
-					SaveBatchURL(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(test.want.resp)
-			}
+			s.EXPECT().
+				SaveBatchURL(gomock.Any(), gomock.Any()).
+				Times(1).
+				Return(test.want.expectedBatch, test.want.expectedErr)
 
 			handler := JSONBatchHandler(s, test.baseURIPrefix)
 			handler(writer, request)
