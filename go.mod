@@ -11,6 +11,8 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
+require github.com/jackc/puddle/v2 v2.2.1 // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa

@@ -9,10 +9,10 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
-	// "github.com/avGenie/url-shortener/internal/app/storage/postgres/migration"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const (
