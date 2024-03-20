@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 
@@ -13,13 +14,20 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
 const (
 	saveQuery      = `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url)`
 	saveBatchQuery = `INSERT INTO url(short_url, url) VALUES($1, $2)`
 	getQuery       = `SELECT url FROM url WHERE short_url=@shortUrl`
+
+	migrationDB     = "postgres"
+	migrationFolder = "migrations"
 )
+
+//go:embed migrations/*.sql
+var migrationFs embed.FS
 
 type PostgresStorage struct {
 	model.Storage
@@ -31,6 +39,11 @@ func NewPostgresStorage(dbStorageConnect string) (*PostgresStorage, error) {
 	db, err := sql.Open("pgx", dbStorageConnect)
 	if err != nil {
 		return nil, fmt.Errorf("error while postgresql connect: %w", err)
+	}
+
+	err = migration(db)
+	if err != nil {
+		return nil, fmt.Errorf("error while postgresql migration: %w", err)
 	}
 
 	return &PostgresStorage{
@@ -126,4 +139,18 @@ func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) (*entity.U
 	}
 
 	return url, nil
+}
+
+func migration(db *sql.DB) error {
+	goose.SetBaseFS(migrationFs)
+
+	if err := goose.SetDialect(migrationDB); err != nil {
+		return err
+	}
+
+	if err := goose.Up(db, migrationFolder); err != nil {
+		return err
+	}
+
+	return nil
 }
