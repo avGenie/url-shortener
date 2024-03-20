@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/avGenie/url-shortener/internal/app/converter"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	post_err "github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	storage_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
@@ -86,4 +88,28 @@ func createStorageBatch(urls models.ReqURLBatch) (storage.Batch, error) {
 	}
 
 	return dbBatch, nil
+}
+
+func batchURLProcessing(saver URLBatchSaver, ctx context.Context, batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
+	urls, err := converter.ConvertBatchReqToURL(batch)
+	if err != nil {
+		zap.L().Error(post_err.CannotProcessURL, zap.Error(err))
+		return nil, fmt.Errorf(post_err.WrongJSONFormat)
+	}
+
+	sBatch, err := createStorageBatch(urls)
+	if err != nil {
+		zap.L().Error("error while creating storage batch", zap.Error(err))
+		return nil, fmt.Errorf(post_err.InternalServerError)
+	}
+
+	savedBatch, err := saver.SaveBatchURL(ctx, sBatch)
+	if err != nil {
+		zap.L().Error("error while saving url to storage", zap.Error(err))
+		return nil, fmt.Errorf(post_err.InternalServerError)
+	}
+
+	outBatch := converter.ConvertStorageBatchToOutBatch(savedBatch, baseURIPrefix)
+
+	return outBatch, nil
 }
