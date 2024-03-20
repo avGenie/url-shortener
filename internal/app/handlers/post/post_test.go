@@ -199,6 +199,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			name:    "cannot process JSON",
 			request: "/",
 			body:    "https://practicum.yandex.ru/",
+			baseURIPrefix: baseURIPrefix,
 
 			want: want{
 				statusCode:   http.StatusBadRequest,
