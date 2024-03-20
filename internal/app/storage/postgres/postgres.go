@@ -9,11 +9,10 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
-	"github.com/avGenie/url-shortener/internal/app/storage/postgres/migration"
+	// "github.com/avGenie/url-shortener/internal/app/storage/postgres/migration"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const (
@@ -32,11 +31,6 @@ func NewPostgresStorage(dbStorageConnect string) (*PostgresStorage, error) {
 	db, err := sql.Open("pgx", dbStorageConnect)
 	if err != nil {
 		return nil, fmt.Errorf("error while postgresql connect: %w", err)
-	}
-
-	err = migration.InitDBTables(db)
-	if err != nil {
-		return nil, fmt.Errorf("error while postgresql table initialization, %w", err)
 	}
 
 	return &PostgresStorage{
@@ -74,8 +68,8 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) er
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			return fmt.Errorf("error while save url to postgres: %w", api.ErrURLAlreadyExists)
-        }
-		
+		}
+
 		return fmt.Errorf("unable to insert row to postgres: %w", err)
 	}
 
