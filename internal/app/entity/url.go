@@ -28,13 +28,13 @@ func NewURL(inputURL string) (*URL, error) {
 // Parses URL
 //
 // If URL couldn't be parsed, returns nil
-func ParseURL(inputURL string) *URL {
+func ParseURL(inputURL string) (*URL, error) {
 	u, err := NewURL(inputURL)
 	if err != nil {
-		return &URL{}
+		return nil, err
 	}
 
-	return u
+	return u, nil
 }
 
 // Validates URL
