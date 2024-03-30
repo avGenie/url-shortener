@@ -52,7 +52,7 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, userID entity.UserID, key,
 }
 
 // Adds elements from the given batch to the local storage
-func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	localUrls := NewLocalStorage(len(batch))
 	for _, obj := range batch {
 		key, err := entity.NewURL(obj.ShortURL)

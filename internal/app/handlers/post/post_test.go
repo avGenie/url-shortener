@@ -348,7 +348,7 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			writer := httptest.NewRecorder()
 
 			s.EXPECT().
-				SaveBatchURL(gomock.Any(), gomock.Any()).
+				SaveBatchURL(gomock.Any(), gomock.Any(), gomock.Any()).
 				Times(1).
 				Return(test.want.expectedBatch, test.want.expectedErr)
 

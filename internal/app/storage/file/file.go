@@ -116,7 +116,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, va
 }
 
 // Adds elements from the given batch to the file storage
-func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

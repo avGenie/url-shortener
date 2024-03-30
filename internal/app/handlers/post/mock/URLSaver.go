@@ -74,16 +74,16 @@ func (m *MockURLBatchSaver) EXPECT() *MockURLBatchSaverMockRecorder {
 }
 
 // SaveBatchURL mocks base method.
-func (m *MockURLBatchSaver) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (m *MockURLBatchSaver) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveBatchURL", ctx, batch)
+	ret := m.ctrl.Call(m, "SaveBatchURL", ctx, userID, batch)
 	ret0, _ := ret[0].(model.Batch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveBatchURL indicates an expected call of SaveBatchURL.
-func (mr *MockURLBatchSaverMockRecorder) SaveBatchURL(ctx, batch interface{}) *gomock.Call {
+func (mr *MockURLBatchSaverMockRecorder) SaveBatchURL(ctx, userID, batch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchURL", reflect.TypeOf((*MockURLBatchSaver)(nil).SaveBatchURL), ctx, batch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchURL", reflect.TypeOf((*MockURLBatchSaver)(nil).SaveBatchURL), ctx, userID, batch)
 }

@@ -28,11 +28,11 @@ type URLSaver interface {
 }
 
 type URLBatchSaver interface {
-	SaveBatchURL(ctx context.Context, batch storage.Batch) (storage.Batch, error)
+	SaveBatchURL(ctx context.Context, userID entity.UserID, batch storage.Batch) (storage.Batch, error)
 }
 
 func postURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID,
-					   inputURL, baseURIPrefix string) (string, error) {
+	inputURL, baseURIPrefix string) (string, error) {
 	hash := createHash(inputURL)
 	if hash == "" {
 		return "", fmt.Errorf("failed to create hash")
@@ -91,7 +91,8 @@ func createStorageBatch(urls models.ReqURLBatch) (storage.Batch, error) {
 	return dbBatch, nil
 }
 
-func batchURLProcessing(saver URLBatchSaver, ctx context.Context, batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
+func batchURLProcessing(saver URLBatchSaver, ctx context.Context, userID entity.UserID,
+						batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
 	urls, err := converter.ConvertBatchReqToURL(batch)
 	if err != nil {
 		zap.L().Error(post_err.CannotProcessURL, zap.Error(err))
@@ -104,7 +105,7 @@ func batchURLProcessing(saver URLBatchSaver, ctx context.Context, batch models.R
 		return nil, fmt.Errorf(post_err.InternalServerError)
 	}
 
-	savedBatch, err := saver.SaveBatchURL(ctx, sBatch)
+	savedBatch, err := saver.SaveBatchURL(ctx, userID, sBatch)
 	if err != nil {
 		zap.L().Error("error while saving url to storage", zap.Error(err))
 		return nil, fmt.Errorf(post_err.InternalServerError)

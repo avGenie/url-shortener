@@ -18,10 +18,9 @@ import (
 )
 
 const (
-	addUserQuery   = `INSERT INTO users VALUES(@usersId)`
-	saveBatchQuery = `INSERT INTO url(short_url, url) VALUES($1, $2)`
-	getQuery       = `SELECT url FROM url WHERE short_url=@shortUrl`
-	getUser        = `SELECT * FROM users WHERE id=$1`
+	addUserQuery = `INSERT INTO users VALUES(@usersId)`
+	getQuery     = `SELECT url FROM url WHERE short_url=@shortUrl`
+	getUser      = `SELECT * FROM users WHERE id=$1`
 
 	migrationDB     = "postgres"
 	migrationFolder = "migrations"
@@ -86,25 +85,9 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, userID entity.UserID, key
 	}
 
 	row := s.db.QueryRowContext(ctx, saveURLQuery, argsURL)
-	if row == nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			fmt.Println("QueryRowContext pgx")
-			return fmt.Errorf("unable to save url in postgres: %w", api.ErrURLAlreadyExists)
-		}
-		fmt.Println("QueryRowContext")
-
-		return fmt.Errorf("unable to save url in postgres: %w", err)
-	}
-
-	if row.Err() != nil {
-		return fmt.Errorf("error while postgres save url request execution: %w", row.Err())
-	}
-
-	var urlID int
-	err = row.Scan(&urlID)
+	urlID, err := getURLIDFromQueryRow(row)
 	if err != nil {
-		return fmt.Errorf("error while scan url id in postgres: %w", err)
+		return fmt.Errorf("error while save url processing in postgres: %w", err)
 	}
 
 	saveURLUserQuery := `INSERT INTO users_url VALUES(@userID, @urlID)`
@@ -126,26 +109,44 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, userID entity.UserID, key
 	return nil
 }
 
-func (s *PostgresStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create transaction in postgres: %w", err)
+		return nil, fmt.Errorf("failed to create save batch url transaction in postgres: %w", err)
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.PrepareContext(ctx, saveBatchQuery)
+	saveURLQuery := `INSERT INTO url(short_url, url) VALUES($1, $2) RETURNING id`
+	stmtURL, err := tx.PrepareContext(ctx, saveURLQuery)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare query in postgres: %w", err)
+		return nil, fmt.Errorf("failed to prepare save batch URL query in postgres: %w", err)
 	}
-	defer stmt.Close()
+	defer stmtURL.Close()
+
+	saveUserURLQuery := `INSERT INTO users_url VALUES($1, $2)`
+	stmtUserURL, err := tx.PrepareContext(ctx, saveUserURLQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare save batch user URL query in postgres: %w", err)
+	}
+	defer stmtURL.Close()
 
 	for _, obj := range batch {
-		_, err = stmt.ExecContext(ctx, obj.ShortURL, obj.InputURL)
+		row := stmtURL.QueryRowContext(ctx, obj.ShortURL, obj.InputURL)
+		urlID, err := getURLIDFromQueryRow(row)
 		if err != nil {
-			return nil, fmt.Errorf("failed to write batch object to postgres: %w", err)
+			return nil, fmt.Errorf("error while save batch url processing in postgres: %w", err)
+		}
+
+		_, err = stmtUserURL.ExecContext(ctx, userID.String(), urlID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save batch users url object to postgres: %w", err)
 		}
 	}
-	tx.Commit()
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("unable to commit save batch url transaction in postgres: %w", err)
+	}
 
 	return batch, nil
 }
@@ -230,4 +231,22 @@ func migration(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+func getURLIDFromQueryRow(row *sql.Row) (int, error) {
+	if row == nil {
+		return 0, fmt.Errorf("row is nil")
+	}
+
+	if row.Err() != nil {
+		return 0, fmt.Errorf("request execution row error: %w", row.Err())
+	}
+
+	var urlID int
+	err := row.Scan(&urlID)
+	if err != nil {
+		return 0, fmt.Errorf("error while scan row: %w", err)
+	}
+
+	return urlID, nil
 }

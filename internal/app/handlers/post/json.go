@@ -86,6 +86,13 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 			return
 		}
 
+		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		if !ok {
+			zap.L().Error("user id couldn't obtain from context while json batch processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		var batch models.ReqBatch
 		err := json.NewDecoder(req.Body).Decode(&batch)
 		if err != nil {
@@ -98,7 +105,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outBatch, err := batchURLProcessing(saver, ctx, batch, baseURIPrefix)
+		outBatch, err := batchURLProcessing(saver, ctx, userID, batch, baseURIPrefix)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
