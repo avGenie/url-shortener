@@ -87,7 +87,7 @@ func TestGetHandler(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("url", test.request)
 
-			s.EXPECT().GetURL(gomock.Any(), gomock.Any()).
+			s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(test.want.expectURL, test.want.expectErr)
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))

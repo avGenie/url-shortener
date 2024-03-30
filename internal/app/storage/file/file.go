@@ -66,7 +66,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 }
 
 // Returns an element from the map
-func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	if s.file == nil {
 		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)

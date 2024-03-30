@@ -36,16 +36,16 @@ func (m *MockURLGetter) EXPECT() *MockURLGetterMockRecorder {
 }
 
 // GetURL mocks base method.
-func (m *MockURLGetter) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+func (m *MockURLGetter) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURL", ctx, key)
+	ret := m.ctrl.Call(m, "GetURL", ctx, userID, key)
 	ret0, _ := ret[0].(*entity.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetURL indicates an expected call of GetURL.
-func (mr *MockURLGetterMockRecorder) GetURL(ctx, key interface{}) *gomock.Call {
+func (mr *MockURLGetterMockRecorder) GetURL(ctx, userID, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockURLGetter)(nil).GetURL), ctx, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockURLGetter)(nil).GetURL), ctx, userID, key)
 }

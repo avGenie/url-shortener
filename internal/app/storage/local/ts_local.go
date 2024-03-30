@@ -24,7 +24,7 @@ func NewTSLocalStorage(size int) *TSLocalStorage {
 }
 
 // Returns an element from the map
-func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+func (s *TSLocalStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	res, ok := s.urls.Get(key)
 	s.mutex.RUnlock()

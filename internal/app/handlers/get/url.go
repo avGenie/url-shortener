@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 )
 
 type URLGetter interface {
-	GetURL(ctx context.Context, key entity.URL) (*entity.URL, error)
+	GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error)
 }
 
 // Processes GET request. Sends the source address at the given short address
@@ -24,8 +25,12 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		shortURL := chi.URLParam(req, "url")
 
-		ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
-		defer cancel()
+		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		if !ok {
+			zap.L().Error("user id couldn't obtain from context")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
 		eShortURL, err := entity.ParseURL(shortURL)
 		if err != nil {
@@ -38,7 +43,10 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 			return
 		}
 
-		url, err := getter.GetURL(ctx, *eShortURL)
+		ctx, cancel := context.WithTimeout(req.Context(), 1*time.Second)
+		defer cancel()
+
+		url, err := getter.GetURL(ctx, userID, *eShortURL)
 		if err != nil {
 			zap.L().Error(
 				"error while getting url",
