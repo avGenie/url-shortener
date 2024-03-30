@@ -28,6 +28,13 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 			return
 		}
 
+		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		if !ok {
+			zap.L().Error("user id couldn't obtain from context while json processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		inputRequest := &models.Request{}
 		err := json.NewDecoder(req.Body).Decode(&inputRequest)
 		defer req.Body.Close()
@@ -46,7 +53,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outputURL, err := postURLProcessing(saver, ctx, entity.UserID(""), inputRequest.URL, baseURIPrefix)
+		outputURL, err := postURLProcessing(saver, ctx, userID, inputRequest.URL, baseURIPrefix)
 
 		response := models.Response{
 			URL: outputURL,
