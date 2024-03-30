@@ -101,11 +101,11 @@ func TestPostHandlerURL(t *testing.T) {
 
 			if test.want.isSaveURL == false {
 				s.EXPECT().
-					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 			} else {
 				s.EXPECT().
-					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(test.want.expectedErr)
 			}
@@ -227,11 +227,11 @@ func TestPostHandlerJSON(t *testing.T) {
 
 			if test.want.isSaveURL == false {
 				s.EXPECT().
-					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(0)
 			} else {
 				s.EXPECT().
-					SaveURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					SaveURL(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(test.want.expectedErr)
 			}

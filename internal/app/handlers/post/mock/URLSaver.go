@@ -37,17 +37,17 @@ func (m *MockURLSaver) EXPECT() *MockURLSaverMockRecorder {
 }
 
 // SaveURL mocks base method.
-func (m *MockURLSaver) SaveURL(ctx context.Context, key, value entity.URL) error {
+func (m *MockURLSaver) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveURL", ctx, key, value)
+	ret := m.ctrl.Call(m, "SaveURL", ctx, userID, key, value)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveURL indicates an expected call of SaveURL.
-func (mr *MockURLSaverMockRecorder) SaveURL(ctx, key, value interface{}) *gomock.Call {
+func (mr *MockURLSaverMockRecorder) SaveURL(ctx, userID, key, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockURLSaver)(nil).SaveURL), ctx, key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockURLSaver)(nil).SaveURL), ctx, userID, key, value)
 }
 
 // MockURLBatchSaver is a mock of URLBatchSaver interface.

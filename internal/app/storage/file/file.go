@@ -84,7 +84,7 @@ func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, 
 // Adds the given value under the specified key
 //
 // Returns `true` if element has been added to the storage.
-func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
+func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

@@ -37,7 +37,7 @@ func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) (*entity.UR
 }
 
 // Adds the given value under the specified key
-func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
+func (s *TSLocalStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

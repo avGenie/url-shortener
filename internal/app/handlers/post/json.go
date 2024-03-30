@@ -46,7 +46,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outputURL, err := postURLProcessing(saver, ctx, inputRequest.URL, baseURIPrefix)
+		outputURL, err := postURLProcessing(saver, ctx, entity.UserID(""), inputRequest.URL, baseURIPrefix)
 
 		response := models.Response{
 			URL: outputURL,

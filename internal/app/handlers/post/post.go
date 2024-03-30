@@ -24,14 +24,15 @@ const (
 )
 
 type URLSaver interface {
-	SaveURL(ctx context.Context, key, value entity.URL) error
+	SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error
 }
 
 type URLBatchSaver interface {
 	SaveBatchURL(ctx context.Context, batch storage.Batch) (storage.Batch, error)
 }
 
-func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPrefix string) (string, error) {
+func postURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID,
+					   inputURL, baseURIPrefix string) (string, error) {
 	hash := createHash(inputURL)
 	if hash == "" {
 		return "", fmt.Errorf("failed to create hash")
@@ -49,7 +50,7 @@ func postURLProcessing(saver URLSaver, ctx context.Context, inputURL, baseURIPre
 		return "", err
 	}
 
-	err = saver.SaveURL(ctx, *shortURL, *userURL)
+	err = saver.SaveURL(ctx, userID, *shortURL, *userURL)
 	if err != nil {
 		if errors.Is(err, storage_err.ErrURLAlreadyExists) {
 			return createOutputPostString(baseURIPrefix, shortURL.String()), err

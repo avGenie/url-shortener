@@ -19,7 +19,6 @@ import (
 
 const (
 	addUserQuery   = `INSERT INTO users VALUES(@usersId)`
-	saveQuery      = `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url)`
 	saveBatchQuery = `INSERT INTO url(short_url, url) VALUES($1, $2)`
 	getQuery       = `SELECT url FROM url WHERE short_url=@shortUrl`
 	getUser        = `SELECT * FROM users WHERE id=$1`
@@ -72,20 +71,56 @@ func (s *PostgresStorage) PingServer(ctx context.Context) error {
 	return nil
 }
 
-func (s *PostgresStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
-	args := pgx.NamedArgs{
+func (s *PostgresStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("unable to begin save url transaction in postgres: %w", err)
+	}
+
+	defer tx.Rollback()
+
+	saveURLQuery := `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url) RETURNING id`
+	argsURL := pgx.NamedArgs{
 		"shortUrl": key.String(),
 		"url":      value.String(),
 	}
 
-	_, err := s.db.ExecContext(ctx, saveQuery, args)
-	if err != nil {
+	row := s.db.QueryRowContext(ctx, saveURLQuery, argsURL)
+	if row == nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return fmt.Errorf("error while save url to postgres: %w", api.ErrURLAlreadyExists)
+			fmt.Println("QueryRowContext pgx")
+			return fmt.Errorf("unable to save url in postgres: %w", api.ErrURLAlreadyExists)
 		}
+		fmt.Println("QueryRowContext")
 
-		return fmt.Errorf("unable to insert row to postgres: %w", err)
+		return fmt.Errorf("unable to save url in postgres: %w", err)
+	}
+
+	if row.Err() != nil {
+		return fmt.Errorf("error while postgres save url request execution: %w", row.Err())
+	}
+
+	var urlID int
+	err = row.Scan(&urlID)
+	if err != nil {
+		return fmt.Errorf("error while scan url id in postgres: %w", err)
+	}
+
+	saveURLUserQuery := `INSERT INTO users_url VALUES(@userID, @urlID)`
+	argsURLUser := pgx.NamedArgs{
+		"userID": userID.String(),
+		"urlID":  urlID,
+	}
+
+	_, err = s.db.ExecContext(ctx, saveURLUserQuery, argsURLUser)
+	if err != nil {
+		return fmt.Errorf("unable to save users and url in postgres: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("unable to commit save url transaction in postgres: %w", err)
 	}
 
 	return nil
@@ -170,7 +205,6 @@ func (s *PostgresStorage) AuthUser(ctx context.Context, userID entity.UserID) (e
 	if row.Err() != nil {
 		return "", fmt.Errorf("error while postgres request execution: %w", row.Err())
 	}
-
 	var id string
 	err := row.Scan(&id)
 	if err != nil {
