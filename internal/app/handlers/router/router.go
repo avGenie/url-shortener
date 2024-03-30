@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"github.com/avGenie/url-shortener/internal/app/auth"
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
-	"github.com/avGenie/url-shortener/internal/app/logger"
 	get "github.com/avGenie/url-shortener/internal/app/handlers/get"
 	post "github.com/avGenie/url-shortener/internal/app/handlers/post"
+	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/go-chi/chi/v5"
 )
@@ -15,6 +16,7 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
+	r.Use(auth.AuthMiddleware(db))
 
 	r.Post("/", post.URLHandler(db, config.BaseURIPrefix))
 	r.Post("/api/shorten", post.JSONHandler(db, config.BaseURIPrefix))

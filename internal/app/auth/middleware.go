@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	db_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -17,7 +18,7 @@ var (
 
 type UserAuthorisator interface {
 	AddUser(ctx context.Context, userID entity.UserID) error
-	AuthUser(ctx context.Context, userID entity.UserID) error
+	AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error)
 }
 
 type UserAdder interface {
@@ -25,7 +26,7 @@ type UserAdder interface {
 }
 
 type UserAuthenticator interface {
-	AuthUser(ctx context.Context, userID entity.UserID) error
+	AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error)
 }
 
 func AuthMiddleware(userAuth UserAuthorisator) func(next http.Handler) http.Handler {
@@ -37,7 +38,7 @@ func AuthMiddleware(userAuth UserAuthorisator) func(next http.Handler) http.Hand
 
 			// Cookies doesn't contain user id
 			if err != nil {
-				zap.L().Debug("error while getting cookie with user id in user authentication", zap.Error(err))
+				zap.L().Info("error while getting cookie with user id in user authentication", zap.Error(err))
 				processInvalidUserID(w, r, userAuth)
 				return
 			}
@@ -65,15 +66,19 @@ func AuthMiddleware(userAuth UserAuthorisator) func(next http.Handler) http.Hand
 			// }
 
 			// User id is not in DB
-			err = authenticateUser(userID, userAuth)
+			userID, err = authenticateUser(userID, userAuth)
 			if err != nil {
-				zap.L().Error("error while user authentication", zap.Error(err))
-				// TODO: add condition if error is in db
-				processInvalidUserID(w, r, userAuth)
+				if errors.Is(err, db_err.ErrUserIDNotFound) {
+					zap.L().Info("authentication failed, create new user")
+					processInvalidUserID(w, r, userAuth)
+				} else {
+					zap.L().Error("internal error while user authentication", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+				}
 				return
 			}
 
-			ctx := context.WithValue(context.Background(), entity.UserIDCtxKey{}, userID)
+			ctx := context.WithValue(r.Context(), entity.UserIDCtxKey{}, userID)
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(w, r)
@@ -97,10 +102,9 @@ func processInvalidUserID(w http.ResponseWriter, r *http.Request, userAuth UserA
 	// 	return
 	// }
 
-	r.AddCookie(&http.Cookie{
-		Name:   entity.UserIDKey,
-		Value:  userID.String(),
-		Secure: true,
+	http.SetCookie(w, &http.Cookie{
+		Name:  entity.UserIDKey,
+		Value: userID.String(),
 	})
 	w.WriteHeader(http.StatusUnauthorized)
 }
@@ -120,7 +124,7 @@ func createUserID(userAdder UserAdder) (entity.UserID, error) {
 	return userID, nil
 }
 
-func authenticateUser(userID entity.UserID, auth UserAuthenticator) error {
+func authenticateUser(userID entity.UserID, auth UserAuthenticator) (entity.UserID, error) {
 	ctx, close := context.WithTimeout(context.Background(), timeout)
 	defer close()
 

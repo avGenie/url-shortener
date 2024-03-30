@@ -6,4 +6,5 @@ var (
 	ErrShortURLNotFound   = errors.New("short url is not found in storage")
 	ErrURLAlreadyExists   = errors.New("short url already exists in storage")
 	ErrFileStorageNotOpen = errors.New("file storage is not open")
+	ErrUserIDNotFound     = errors.New("user id not found in storage")
 )

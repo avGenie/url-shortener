@@ -18,9 +18,11 @@ import (
 )
 
 const (
+	addUserQuery   = `INSERT INTO users VALUES(@usersId)`
 	saveQuery      = `INSERT INTO url(short_url, url) VALUES(@shortUrl, @url)`
 	saveBatchQuery = `INSERT INTO url(short_url, url) VALUES($1, $2)`
 	getQuery       = `SELECT url FROM url WHERE short_url=@shortUrl`
+	getUser        = `SELECT * FROM users WHERE id=$1`
 
 	migrationDB     = "postgres"
 	migrationFolder = "migrations"
@@ -139,6 +141,47 @@ func (s *PostgresStorage) GetURL(ctx context.Context, key entity.URL) (*entity.U
 	}
 
 	return url, nil
+}
+
+func (s *PostgresStorage) AddUser(ctx context.Context, userID entity.UserID) error {
+	args := pgx.NamedArgs{
+		"usersId": userID.String(),
+	}
+
+	_, err := s.db.ExecContext(ctx, addUserQuery, args)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			return fmt.Errorf("error while adding user to postgres: %w", api.ErrURLAlreadyExists)
+		}
+
+		return fmt.Errorf("unable to add user to postgres: %w", err)
+	}
+
+	return nil
+}
+
+func (s *PostgresStorage) AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error) {
+	row := s.db.QueryRowContext(ctx, getUser, userID.String())
+	if row == nil {
+		return "", fmt.Errorf("error while postgres prepare row")
+	}
+
+	if row.Err() != nil {
+		return "", fmt.Errorf("error while postgres request execution: %w", row.Err())
+	}
+
+	var id string
+	err := row.Scan(&id)
+	if err != nil {
+		fmt.Println(err.Error())
+		if err == sql.ErrNoRows {
+			return "", api.ErrUserIDNotFound
+		}
+		return "", fmt.Errorf("error while processing response row in postgres: %w", err)
+	}
+
+	return userID, nil
 }
 
 func migration(db *sql.DB) error {

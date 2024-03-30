@@ -50,11 +50,12 @@ func (mr *MockUserAuthorisatorMockRecorder) AddUser(ctx, userID interface{}) *go
 }
 
 // AuthUser mocks base method.
-func (m *MockUserAuthorisator) AuthUser(ctx context.Context, userID entity.UserID) error {
+func (m *MockUserAuthorisator) AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AuthUser", ctx, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(entity.UserID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AuthUser indicates an expected call of AuthUser.
@@ -124,11 +125,12 @@ func (m *MockUserAuthenticator) EXPECT() *MockUserAuthenticatorMockRecorder {
 }
 
 // AuthUser mocks base method.
-func (m *MockUserAuthenticator) AuthUser(ctx context.Context, userID entity.UserID) error {
+func (m *MockUserAuthenticator) AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AuthUser", ctx, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(entity.UserID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AuthUser indicates an expected call of AuthUser.
