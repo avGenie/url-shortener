@@ -88,7 +88,6 @@ func AuthMiddleware(userAuth UserAuthorisator) func(next http.Handler) http.Hand
 
 func processInvalidUserID(w http.ResponseWriter, r *http.Request, userAuth UserAuthorisator) {
 	userID, err := createUserID(userAuth)
-
 	if err != nil {
 		zap.L().Error("error while creating user id in user authentication", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)

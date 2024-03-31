@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/models"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/jackc/pgerrcode"
@@ -159,11 +160,11 @@ func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key 
 
 	row := s.db.QueryRowContext(ctx, query, args)
 	if row == nil {
-		return nil, fmt.Errorf("error while postgres request execution")
+		return nil, fmt.Errorf("error in postgres request execution while getting url")
 	}
 
 	if row.Err() != nil {
-		return nil, fmt.Errorf("error while postgres request execution: %w", row.Err())
+		return nil, fmt.Errorf("error in postgres request execution while getting url: %w", row.Err())
 	}
 
 	var dbURL string
@@ -172,15 +173,51 @@ func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key 
 		if err == sql.ErrNoRows {
 			return nil, api.ErrShortURLNotFound
 		}
-		return nil, fmt.Errorf("error while processing response row in postgres: %w", err)
+		return nil, fmt.Errorf("error in postgres processing response row while getting url: %w", err)
 	}
 
 	url, err := entity.NewURL(dbURL)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating url in postgres: %w", err)
+		return nil, fmt.Errorf("error in postgres creating url while getting url: %w", err)
 	}
 
 	return url, nil
+}
+
+func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
+	query := `SELECT u.url, u.short_url FROM users_url AS uu
+				JOIN url AS u
+					ON uu.url_id = u.id
+			  WHERE uu.users_id = @userID`
+
+	args := pgx.NamedArgs{
+		"userID":   userID.String(),
+	}
+
+	rows, err := s.db.QueryContext(ctx, query, args)
+	if err != nil {
+		return nil, fmt.Errorf("error in postgres request execution while getting all urls by user id: %w", err)
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("error in postgres requested rows while getting all urls by user id: %w", rows.Err())
+	}
+	
+	var urlsBatch models.AllUrlsBatch
+	for rows.Next() {
+		var allURLs models.AllUrlsResponse
+		err := rows.Scan(&allURLs.OriginalURL, &allURLs.ShortURL)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, api.ErrShortURLNotFound
+			}
+			return nil, fmt.Errorf("error while processing response row in postgres: %w", err)
+		}
+
+		urlsBatch = append(urlsBatch, allURLs)
+	}
+
+	return urlsBatch, nil
 }
 
 func (s *PostgresStorage) AddUser(ctx context.Context, userID entity.UserID) error {
