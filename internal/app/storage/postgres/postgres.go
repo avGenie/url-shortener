@@ -193,7 +193,7 @@ func (s *PostgresStorage) AddUser(ctx context.Context, userID entity.UserID) err
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return fmt.Errorf("error while adding user to postgres: %w", api.ErrURLAlreadyExists)
+			return fmt.Errorf("error while adding user to postgres: %w", api.ErrUserAlreadyExists)
 		}
 
 		return fmt.Errorf("unable to add user to postgres: %w", err)

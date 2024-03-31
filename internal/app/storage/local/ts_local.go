@@ -26,7 +26,7 @@ func NewTSLocalStorage(size int) *TSLocalStorage {
 // Returns an element from the map
 func (s *TSLocalStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
-	res, ok := s.urls.Get(key)
+	res, ok := s.urls.Get(userID, key)
 	s.mutex.RUnlock()
 
 	if !ok {
@@ -41,12 +41,12 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, userID entity.UserID, key,
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	_, ok := s.urls.Get(key)
+	_, ok := s.urls.Get(userID, key)
 	if ok {
 		return fmt.Errorf("error while save url to ts local storage: %w", api.ErrURLAlreadyExists)
 	}
 
-	s.urls.Add(key, value)
+	s.urls.Add(userID, key, value)
 
 	return nil
 }
@@ -64,7 +64,7 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID,
 			return nil, fmt.Errorf("failed to create short url from batch in local storage: %w", err)
 		}
 
-		localUrls.Add(*key, *value)
+		localUrls.Add(userID, *key, *value)
 	}
 
 	s.mutex.Lock()
@@ -72,6 +72,32 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID,
 	s.mutex.Unlock()
 
 	return batch, nil
+}
+
+func (s *TSLocalStorage) AddUser(ctx context.Context, userID entity.UserID) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	_, ok := s.urls.GetByUserID(userID)
+	if ok {
+		return fmt.Errorf("error while save url to ts local storage: %w", api.ErrUserAlreadyExists)
+	}
+
+	s.urls.AddUserID(userID)
+
+	return nil
+}
+
+func (s *TSLocalStorage) AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	_, ok := s.urls.GetByUserID(userID)
+	if !ok {
+		return "", fmt.Errorf("error while save url to ts local storage: %w", api.ErrUserIDNotFound)
+	}
+
+	return userID, nil
 }
 
 func PingServer(ctx context.Context) error {
