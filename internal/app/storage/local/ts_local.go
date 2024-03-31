@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/models"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
@@ -34,6 +35,26 @@ func (s *TSLocalStorage) GetURL(ctx context.Context, userID entity.UserID, key e
 	}
 
 	return &res, nil
+}
+
+func (s *TSLocalStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
+	s.mutex.RLock()
+	urls, ok := s.urls.GetByUserID(userID)
+	s.mutex.RUnlock()
+
+	if !ok {
+		return nil, fmt.Errorf("error while getting all user url from ts local storage: %w", api.ErrShortURLNotFound)
+	}
+
+	var allURLs models.AllUrlsBatch
+	for key, value := range urls {
+		allURLs = append(allURLs, models.AllUrlsResponse{
+			ShortURL: key.String(),
+			OriginalURL: value.String(),
+		})
+	}
+
+	return allURLs, nil
 }
 
 // Adds the given value under the specified key

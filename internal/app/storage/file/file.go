@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/models"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
@@ -72,8 +73,6 @@ func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key enti
 		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
 	}
 	res, ok := s.cache.Get(userID, key)
-	// fmt.Println(res)
-	// fmt.Println(ok)
 	s.mutex.RUnlock()
 
 	if !ok {
@@ -81,6 +80,29 @@ func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key enti
 	}
 
 	return &res, nil
+}
+
+func (s *FileStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
+	s.mutex.RLock()
+	if s.file == nil {
+		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
+	}
+	urls, ok := s.cache.GetByUserID(userID)
+	s.mutex.RUnlock()
+
+	if !ok {
+		return nil, fmt.Errorf("error while getting all user url from ts local storage: %w", api.ErrShortURLNotFound)
+	}
+
+	var allURLs models.AllUrlsBatch
+	for key, value := range urls {
+		allURLs = append(allURLs, models.AllUrlsResponse{
+			ShortURL:    key.String(),
+			OriginalURL: value.String(),
+		})
+	}
+
+	return allURLs, nil
 }
 
 // Adds the given value under the specified key
