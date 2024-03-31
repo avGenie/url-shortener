@@ -89,6 +89,11 @@ func UserURLsHandler(getter AllURLGetter) http.HandlerFunc {
 			return
 		}
 
+		if len(urls) == 0 {
+			writer.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		out, err := json.Marshal(urls)
 		if err != nil {
 			zap.L().Error("error while converting all user urls to output", zap.Error(err))
