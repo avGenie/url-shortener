@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
+	handler_err "github.com/avGenie/url-shortener/internal/app/handlers/errors"
+	storage_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -52,17 +54,20 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 
 		url, err := getter.GetURL(ctx, userID, *eShortURL)
 		if err != nil {
+			if errors.Is(err, storage_err.ErrAllURLsDeleted) {
+				writer.WriteHeader(http.StatusGone)
+				return
+			}
+
 			zap.L().Error(
 				"error while getting url",
 				zap.String("error", err.Error()),
 				zap.String("short_url", shortURL),
 			)
 
-			http.Error(writer, errors.ShortURLNotInDB, http.StatusBadRequest)
+			http.Error(writer, handler_err.ShortURLNotInDB, http.StatusBadRequest)
 			return
 		}
-
-		zap.L().Info("url has been decoded succeessfully", zap.String("decoded url", url.String()))
 
 		writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		writer.Header().Set("Location", url.String())
@@ -84,6 +89,11 @@ func UserURLsHandler(getter AllURLGetter) http.HandlerFunc {
 
 		urls, err := getter.GetAllURLByUserID(ctx, userID)
 		if err != nil {
+			if errors.Is(err, storage_err.ErrAllURLsDeleted) {
+				writer.WriteHeader(http.StatusGone)
+				return
+			}
+
 			zap.L().Error("couldn't get all user urls", zap.Error(err), zap.String("user_id", userID.String()))
 			writer.WriteHeader(http.StatusInternalServerError)
 			return

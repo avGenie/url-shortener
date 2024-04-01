@@ -10,4 +10,5 @@ var (
 
 	ErrUserAlreadyExists = errors.New("user already exists in storage")
 	ErrUserIDNotFound    = errors.New("user id not found in storage")
+	ErrAllURLsDeleted    = errors.New("all urls have been deleted for this user")
 )

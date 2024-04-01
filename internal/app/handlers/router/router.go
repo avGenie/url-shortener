@@ -4,6 +4,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/auth"
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
+	handlers "github.com/avGenie/url-shortener/internal/app/handlers/delete"
 	get "github.com/avGenie/url-shortener/internal/app/handlers/get"
 	post "github.com/avGenie/url-shortener/internal/app/handlers/post"
 	"github.com/avGenie/url-shortener/internal/app/logger"
@@ -13,6 +14,8 @@ import (
 
 func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 	r := chi.NewRouter()
+
+	deleteHandle := handlers.NewDeleteHandler(db)
 
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
@@ -25,6 +28,8 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 	r.Get("/{url}", get.URLHandler(db))
 	r.Get("/ping", get.PingDBHandler(db))
 	r.Get("/api/user/urls", get.UserURLsHandler(db))
+	
+	r.Delete("/api/user/urls", deleteHandle.DeleteUserURLHandler())
 
 	return r
 }

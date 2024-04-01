@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
 )
 
 const (
@@ -114,7 +115,7 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID
 }
 
 func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
-	query := `SELECT url FROM url WHERE user_id = @userID AND short_url = @shortUrl`
+	query := `SELECT url, deleted FROM url WHERE user_id = @userID AND short_url = @shortUrl`
 	args := pgx.NamedArgs{
 		"userID":   userID.String(),
 		"shortUrl": key.String(),
@@ -130,12 +131,25 @@ func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key 
 	}
 
 	var dbURL string
-	err := row.Scan(&dbURL)
+	var deleted bool
+	err := row.Scan(&dbURL, &deleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, api.ErrShortURLNotFound
 		}
 		return nil, fmt.Errorf("error in postgres processing response row while getting url: %w", err)
+	}
+
+	if deleted {
+		err = deleteURL(s.db, ctx, userID.String(), key.String())
+		if err != nil {
+			zap.L().Error(
+				"unable to delete url while getting from postgres",
+				zap.Error(err),
+				zap.String("short_url", key.String()))
+		}
+
+		return nil, api.ErrAllURLsDeleted
 	}
 
 	url, err := entity.NewURL(dbURL)
@@ -147,7 +161,13 @@ func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key 
 }
 
 func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
-	query := `SELECT url, short_url FROM url WHERE user_id = @userID`
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create get all urls transaction in postgres: %w", err)
+	}
+	defer tx.Rollback()
+
+	query := `SELECT url, short_url, deleted FROM url WHERE user_id = @userID`
 	args := pgx.NamedArgs{
 		"userID": userID.String(),
 	}
@@ -161,10 +181,12 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 		return nil, fmt.Errorf("error in postgres requested rows while getting all urls by user id: %w", rows.Err())
 	}
 
+	isDeleted := false
 	var urlsBatch models.AllUrlsBatch
 	for rows.Next() {
-		var allURLs models.AllUrlsResponse
-		err := rows.Scan(&allURLs.OriginalURL, &allURLs.ShortURL)
+		var url models.AllUrlsResponse
+		var deleted bool
+		err := rows.Scan(&url.OriginalURL, &url.ShortURL, &deleted)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, api.ErrShortURLNotFound
@@ -172,7 +194,27 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 			return nil, fmt.Errorf("error while processing response row in postgres: %w", err)
 		}
 
-		urlsBatch = append(urlsBatch, allURLs)
+		if deleted {
+			isDeleted = true
+			err = deleteURL(s.db, ctx, userID.String(), url.ShortURL)
+			if err != nil {
+				zap.L().Error(
+					"unable to delete url while getting all urls from postgres",
+					zap.Error(err),
+					zap.String("short_url", url.ShortURL))
+			}
+		}
+
+		urlsBatch = append(urlsBatch, url)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction while getting all urls in postgres: %w", err)
+	}
+
+	if len(urlsBatch) == 0 && isDeleted {
+		return nil, api.ErrAllURLsDeleted
 	}
 
 	return urlsBatch, nil
@@ -220,6 +262,35 @@ func (s *PostgresStorage) AuthUser(ctx context.Context, userID entity.UserID) (e
 	return userID, nil
 }
 
+func (s *PostgresStorage) DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete batch url transaction in postgres: %w", err)
+	}
+	defer tx.Rollback()
+
+	query := `UPDATE url SET deleted = true WHERE user_id=$1 AND short_url=$2`
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare query while deleting urls in postgres: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, url := range urls {
+		_, err = stmt.ExecContext(ctx, url.UserID, url.ShortURL)
+		if err != nil {
+			return fmt.Errorf("failed to update deleted url in postgres: %w", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("unable to commit deleted batch url transaction in postgres: %w", err)
+	}
+
+	return nil
+}
+
 func migration(db *sql.DB) error {
 	goose.SetBaseFS(migrationFs)
 
@@ -229,6 +300,21 @@ func migration(db *sql.DB) error {
 
 	if err := goose.Up(db, migrationFolder); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func deleteURL(db *sql.DB, ctx context.Context, userID string, shortURL string) error {
+	query := `DELETE FROM url WHERE user_id=@userID AND short_url=@shortURL`
+	args := pgx.NamedArgs{
+		"userID":   userID,
+		"shortUrl": shortURL,
+	}
+
+	_, err := db.ExecContext(ctx, query, args)
+	if err != nil {
+		return fmt.Errorf("unable to delete row from postgres: %w", err)
 	}
 
 	return nil
