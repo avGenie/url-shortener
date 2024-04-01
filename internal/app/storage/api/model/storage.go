@@ -19,4 +19,6 @@ type Storage interface {
 
 	AddUser(ctx context.Context, userID entity.UserID) error
 	AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error)
+
+	DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error
 }

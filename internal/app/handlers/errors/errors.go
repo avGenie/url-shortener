@@ -1,5 +1,7 @@
 package errors
 
+import "errors"
+
 var (
 	WrongURLFormat    = "wrong URL format"
 	WrongJSONFormat   = "wrong JSON format"
@@ -8,4 +10,6 @@ var (
 	CannotProcessJSON = "cannot process JSON"
 
 	InternalServerError = "internal server error"
+
+	ErrWrongDeletedURLFormat = errors.New("wrong deleted urls format")
 )
