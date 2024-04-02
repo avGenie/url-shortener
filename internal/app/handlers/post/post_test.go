@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	netAddr       = "localhost:8080"
 	baseURIPrefix = "http://localhost:8080"
 )
 

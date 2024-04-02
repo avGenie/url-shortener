@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
+	handler_err "github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -58,7 +58,7 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 				zap.String("short_url", shortURL),
 			)
 
-			http.Error(writer, errors.ShortURLNotInDB, http.StatusBadRequest)
+			http.Error(writer, handler_err.ShortURLNotInDB, http.StatusBadRequest)
 			return
 		}
 
@@ -70,8 +70,14 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	}
 }
 
-func UserURLsHandler(getter AllURLGetter) http.HandlerFunc {
+func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
+		if baseURIPrefix == "" {
+			zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		
 		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while all user urls processing")
@@ -82,24 +88,16 @@ func UserURLsHandler(getter AllURLGetter) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		urls, err := getter.GetAllURLByUserID(ctx, userID)
+		out, err := processAllUSerURL(getter, ctx, userID, baseURIPrefix)
 		if err != nil {
-			zap.L().Error("couldn't get all user urls", zap.Error(err), zap.String("user_id", userID.String()))
+			if errors.Is(err, ErrAllURLNotFound) {
+				writer.WriteHeader(http.StatusNoContent)
+				return
+			}
+
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
-		}
-
-		if len(urls) == 0 {
-			writer.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		out, err := json.Marshal(urls)
-		if err != nil {
-			zap.L().Error("error while converting all user urls to output", zap.Error(err))
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		}		
 
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)
