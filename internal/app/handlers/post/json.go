@@ -24,7 +24,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 
 		if baseURIPrefix == "" {
 			zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -66,7 +66,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 				return
 			}
 
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -82,7 +82,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 
 		if baseURIPrefix == "" {
 			zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -114,7 +114,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		out, err := json.Marshal(outBatch)
 		if err != nil {
 			zap.L().Error("error while converting storage url to output", zap.Error(err))
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 

@@ -34,13 +34,16 @@ func TestGetHandler(t *testing.T) {
 		message     string
 	}
 	tests := []struct {
-		name    string
-		request string
-		want    want
+		name              string
+		request           string
+		userID            entity.UserID
+		exitBeforeGetting bool
+		want              want
 	}{
 		{
 			name:    "correct input data",
 			request: "aHR0cHM6",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:  http.StatusTemporaryRedirect,
@@ -54,6 +57,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:    "request without id",
 			request: "",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
@@ -67,6 +71,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:    "missing URL",
 			request: "/fsdfuytu",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
@@ -75,6 +80,18 @@ func TestGetHandler(t *testing.T) {
 				expectURL:   nil,
 				expectErr:   fmt.Errorf(""),
 				message:     errors.ShortURLNotInDB + "\n",
+			},
+		},
+		{
+			name:    "missing user id",
+			request: "/aHR0cHM6",
+			userID:  entity.UserID(""),
+			exitBeforeGetting: true,
+
+			want: want{
+				statusCode:  http.StatusInternalServerError,
+				contentType: "",
+				location:    "",
 			},
 		},
 	}
@@ -87,10 +104,17 @@ func TestGetHandler(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("url", test.request)
 
-			s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(test.want.expectURL, test.want.expectErr)
+			if test.exitBeforeGetting {
+				s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+			} else {
+				s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(test.want.expectURL, test.want.expectErr)
+			}
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			if len(test.userID) != 0 {
+				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
+			}
 
 			handler := URLHandler(s)
 			handler(writer, request)
@@ -100,6 +124,10 @@ func TestGetHandler(t *testing.T) {
 			assert.Equal(t, test.want.statusCode, res.StatusCode)
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 			assert.Equal(t, test.want.location, res.Header.Get("Location"))
+
+			if test.exitBeforeGetting {
+				return
+			}
 
 			userResult, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
