@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,9 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/handlers/post/mock"
 	storage_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
+
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +21,6 @@ import (
 )
 
 const (
-	netAddr       = "localhost:8080"
 	baseURIPrefix = "http://localhost:8080"
 )
 
@@ -40,6 +42,7 @@ func TestPostHandlerURL(t *testing.T) {
 		request       string
 		body          string
 		baseURIPrefix string
+		userID        entity.UserID
 		want          want
 	}{
 		{
@@ -47,6 +50,7 @@ func TestPostHandlerURL(t *testing.T) {
 			request:       "/",
 			body:          "https://practicum.yandex.ru/",
 			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusCreated,
@@ -61,6 +65,7 @@ func TestPostHandlerURL(t *testing.T) {
 			request:       "/",
 			body:          "https://practicum.yandex.ru/",
 			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusConflict,
@@ -74,6 +79,7 @@ func TestPostHandlerURL(t *testing.T) {
 			name:          "empty URL",
 			request:       "/",
 			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusBadRequest,
@@ -85,11 +91,21 @@ func TestPostHandlerURL(t *testing.T) {
 			name:    "empty base URI prefix",
 			request: "/",
 			body:    "https://practicum.yandex.ru/",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
-				statusCode:   http.StatusInternalServerError,
-				contentType:  "text/plain; charset=utf-8",
-				expectedBody: errors.InternalServerError + "\n",
+				statusCode: http.StatusInternalServerError,
+			},
+		},
+		{
+			name:          "missing user id",
+			request:       "/",
+			body:          "https://practicum.yandex.ru/",
+			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID(""),
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -98,6 +114,10 @@ func TestPostHandlerURL(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
+
+			if len(test.userID) != 0 {
+				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
+			}
 
 			if test.want.isSaveURL == false {
 				s.EXPECT().
@@ -149,6 +169,7 @@ func TestPostHandlerJSON(t *testing.T) {
 		body          string
 		baseURIPrefix string
 		urlsKey       string
+		userID        entity.UserID
 		want          want
 	}{
 		{
@@ -157,6 +178,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			body:          `{"url":"https://practicum.yandex.ru/"}`,
 			baseURIPrefix: baseURIPrefix,
 			urlsKey:       "42b3e75f",
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusCreated,
@@ -173,6 +195,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			body:          `{"url":"https://practicum.yandex.ru/"}`,
 			baseURIPrefix: baseURIPrefix,
 			urlsKey:       "42b3e75f",
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusConflict,
@@ -188,6 +211,7 @@ func TestPostHandlerJSON(t *testing.T) {
 			request:       "/",
 			body:          `{"url": ""}`,
 			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusBadRequest,
@@ -196,10 +220,11 @@ func TestPostHandlerJSON(t *testing.T) {
 			},
 		},
 		{
-			name:    "cannot process JSON",
-			request: "/",
-			body:    "https://practicum.yandex.ru/",
+			name:          "cannot process JSON",
+			request:       "/",
+			body:          "https://practicum.yandex.ru/",
 			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:   http.StatusBadRequest,
@@ -211,11 +236,36 @@ func TestPostHandlerJSON(t *testing.T) {
 			name:    "empty base URI prefix",
 			request: "/",
 			body:    `{"url":"https://practicum.yandex.ru"}`,
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
-				statusCode:   http.StatusInternalServerError,
-				contentType:  "text/plain; charset=utf-8",
-				expectedBody: errors.InternalServerError + "\n",
+				statusCode: http.StatusInternalServerError,
+			},
+		},
+		{
+			name:          "missing user id",
+			request:       "/",
+			body:          `{"url":"https://practicum.yandex.ru"}`,
+			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID(""),
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+		},
+		{
+			name:          "error url processing",
+			request:       "/",
+			body:          `{"url":"https://practicum.yandex.ru/"}`,
+			baseURIPrefix: baseURIPrefix,
+			urlsKey:       "42b3e75f",
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+
+			want: want{
+				statusCode:  http.StatusInternalServerError,
+				urlsValue:   "https://practicum.yandex.ru/",
+				expectedErr: fmt.Errorf("error"),
+				isSaveURL:   true,
 			},
 		},
 	}
@@ -224,6 +274,10 @@ func TestPostHandlerJSON(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
+
+			if len(test.userID) != 0 {
+				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
+			}
 
 			if test.want.isSaveURL == false {
 				s.EXPECT().
@@ -254,6 +308,7 @@ func TestPostHandlerJSON(t *testing.T) {
 		})
 	}
 }
+
 func TestPostHandlerJSONBatch(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -323,6 +378,8 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 		request       string
 		body          string
 		baseURIPrefix string
+		userID        entity.UserID
+		isSaveURL     bool
 		want          want
 	}{
 		{
@@ -330,14 +387,37 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			request:       "/",
 			body:          inputBatch,
 			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			isSaveURL:     true,
 
 			want: want{
-				statusCode:   201,
-				contentType:  "application/json",
-				expectedBody: outputBatch,
-				urlsValue:    "https://practicum.yandex.ru/",
+				statusCode:    201,
+				contentType:   "application/json",
+				expectedBody:  outputBatch,
+				urlsValue:     "https://practicum.yandex.ru/",
 				expectedBatch: batchResponse,
 				expectedErr:   nil,
+			},
+		},
+		{
+			name:    "empty base URI prefix",
+			request: "/",
+			body:    `{"url":"https://practicum.yandex.ru"}`,
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+		},
+		{
+			name:          "missing user id",
+			request:       "/",
+			body:          `{"url":"https://practicum.yandex.ru"}`,
+			baseURIPrefix: baseURIPrefix,
+			userID:        entity.UserID(""),
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
 			},
 		},
 	}
@@ -347,10 +427,20 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			writer := httptest.NewRecorder()
 
-			s.EXPECT().
-				SaveBatchURL(gomock.Any(), gomock.Any(), gomock.Any()).
-				Times(1).
-				Return(test.want.expectedBatch, test.want.expectedErr)
+			if len(test.userID) != 0 {
+				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
+			}
+
+			if test.isSaveURL == false {
+				s.EXPECT().
+					SaveBatchURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(0)
+			} else {
+				s.EXPECT().
+					SaveBatchURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(test.want.expectedBatch, test.want.expectedErr)
+			}
 
 			handler := JSONBatchHandler(s, test.baseURIPrefix)
 			handler(writer, request)
@@ -366,7 +456,9 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 			err = res.Body.Close()
 			require.NoError(t, err)
 
-			assert.JSONEq(t, test.want.expectedBody, string(userResult))
+			if test.isSaveURL {
+				assert.JSONEq(t, test.want.expectedBody, string(userResult))
+			}
 		})
 	}
 }

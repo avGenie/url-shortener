@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -75,8 +74,14 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	}
 }
 
-func UserURLsHandler(getter AllURLGetter) http.HandlerFunc {
+func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
+		if baseURIPrefix == "" {
+			zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		
 		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while all user urls processing")
@@ -87,29 +92,16 @@ func UserURLsHandler(getter AllURLGetter) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		urls, err := getter.GetAllURLByUserID(ctx, userID)
+		out, err := processAllUSerURL(getter, ctx, userID, baseURIPrefix)
 		if err != nil {
-			if errors.Is(err, storage_err.ErrAllURLsDeleted) {
-				writer.WriteHeader(http.StatusGone)
+			if errors.Is(err, ErrAllURLNotFound) {
+				writer.WriteHeader(http.StatusNoContent)
 				return
 			}
 
-			zap.L().Error("couldn't get all user urls", zap.Error(err), zap.String("user_id", userID.String()))
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
-		}
-
-		if len(urls) == 0 {
-			writer.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		out, err := json.Marshal(urls)
-		if err != nil {
-			zap.L().Error("error while converting all user urls to output", zap.Error(err))
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		}		
 
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)

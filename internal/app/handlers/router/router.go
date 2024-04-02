@@ -27,7 +27,7 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 
 	r.Get("/{url}", get.URLHandler(db))
 	r.Get("/ping", get.PingDBHandler(db))
-	r.Get("/api/user/urls", get.UserURLsHandler(db))
+	r.Get("/api/user/urls", get.UserURLsHandler(db, config.BaseURIPrefix))
 	
 	r.Delete("/api/user/urls", deleteHandle.DeleteUserURLHandler())
 

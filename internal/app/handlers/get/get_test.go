@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
@@ -13,10 +14,15 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/handlers/get/mock"
 	"github.com/avGenie/url-shortener/internal/app/logger"
+	"github.com/avGenie/url-shortener/internal/app/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	baseURIPrefix = "http://localhost:8080"
 )
 
 func TestGetHandler(t *testing.T) {
@@ -34,13 +40,16 @@ func TestGetHandler(t *testing.T) {
 		message     string
 	}
 	tests := []struct {
-		name    string
-		request string
-		want    want
+		name              string
+		request           string
+		userID            entity.UserID
+		exitBeforeGetting bool
+		want              want
 	}{
 		{
 			name:    "correct input data",
 			request: "aHR0cHM6",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:  http.StatusTemporaryRedirect,
@@ -54,6 +63,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:    "request without id",
 			request: "",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
@@ -67,6 +77,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:    "missing URL",
 			request: "/fsdfuytu",
+			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
@@ -75,6 +86,18 @@ func TestGetHandler(t *testing.T) {
 				expectURL:   nil,
 				expectErr:   fmt.Errorf(""),
 				message:     errors.ShortURLNotInDB + "\n",
+			},
+		},
+		{
+			name:              "missing user id",
+			request:           "/aHR0cHM6",
+			userID:            entity.UserID(""),
+			exitBeforeGetting: true,
+
+			want: want{
+				statusCode:  http.StatusInternalServerError,
+				contentType: "",
+				location:    "",
 			},
 		},
 	}
@@ -87,10 +110,17 @@ func TestGetHandler(t *testing.T) {
 			rctx := chi.NewRouteContext()
 			rctx.URLParams.Add("url", test.request)
 
-			s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(test.want.expectURL, test.want.expectErr)
+			if test.exitBeforeGetting {
+				s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+			} else {
+				s.EXPECT().GetURL(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(test.want.expectURL, test.want.expectErr)
+			}
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
+			if len(test.userID) != 0 {
+				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
+			}
 
 			handler := URLHandler(s)
 			handler(writer, request)
@@ -101,6 +131,10 @@ func TestGetHandler(t *testing.T) {
 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
 			assert.Equal(t, test.want.location, res.Header.Get("Location"))
 
+			if test.exitBeforeGetting {
+				return
+			}
+
 			userResult, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
 
@@ -108,6 +142,143 @@ func TestGetHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want.message, string(userResult))
+		})
+	}
+}
+
+func TestGetUserURLHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	s := mock.NewMockAllURLGetter(ctrl)
+
+	outputStorageBatch := models.AllUrlsBatch{
+		{
+			ShortURL:    "42b3e75f",
+			OriginalURL: "https://practicum.yandex.ru/",
+		},
+		{
+			ShortURL:    "77fca595",
+			OriginalURL: "https://yandex.ru/",
+		},
+		{
+			ShortURL:    "ac6bb669",
+			OriginalURL: "https://www.google.com",
+		},
+	}
+
+	outputBatch := strings.TrimSpace(`
+	[
+		{
+			"short_url": "http://localhost:8080/42b3e75f",
+			"original_url": "https://practicum.yandex.ru/"
+		},
+		{
+			"short_url": "http://localhost:8080/77fca595",
+			"original_url": "https://yandex.ru/"
+		},
+		{
+			"short_url": "http://localhost:8080/ac6bb669",
+			"original_url": "https://www.google.com"
+		}
+	]`)
+
+	type want struct {
+		statusCode  int
+		contentType string
+		expectErr   error
+		message     string
+	}
+	tests := []struct {
+		name               string
+		baseURIPrefix      string
+		outputStorageBatch models.AllUrlsBatch
+		userID             entity.UserID
+		invalidOutput      bool
+		exitBeforeGetting  bool
+		want               want
+	}{
+		{
+			name:               "correct input data",
+			baseURIPrefix:      baseURIPrefix,
+			outputStorageBatch: outputStorageBatch,
+			userID:             entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+
+			want: want{
+				statusCode:  http.StatusCreated,
+				contentType: "application/json",
+				expectErr:   nil,
+				message:     outputBatch,
+			},
+		},
+		{
+			name:               "empty output",
+			baseURIPrefix:      baseURIPrefix,
+			outputStorageBatch: models.AllUrlsBatch{},
+			userID:             entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			invalidOutput:      true,
+
+			want: want{
+				statusCode: http.StatusNoContent,
+				expectErr:  nil,
+			},
+		},
+		{
+			name:               "error while getting from storage",
+			baseURIPrefix:      baseURIPrefix,
+			outputStorageBatch: models.AllUrlsBatch{},
+			userID:             entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			invalidOutput:      true,
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
+				expectErr:  fmt.Errorf("error"),
+			},
+		},
+		{
+			name:              "empty base URI prefix",
+			userID:            entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			invalidOutput:     true,
+			exitBeforeGetting: true,
+
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+			writer := httptest.NewRecorder()
+
+			if len(test.userID) != 0 {
+				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
+			}
+
+			if test.exitBeforeGetting {
+				s.EXPECT().GetAllURLByUserID(gomock.Any(), gomock.Any()).Times(0)
+			} else {
+				s.EXPECT().GetAllURLByUserID(gomock.Any(), gomock.Any()).Return(test.outputStorageBatch, test.want.expectErr)
+			}
+
+			handler := UserURLsHandler(s, test.baseURIPrefix)
+			handler(writer, request)
+
+			res := writer.Result()
+
+			assert.Equal(t, test.want.statusCode, res.StatusCode)
+			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"))
+
+			userResult, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			err = res.Body.Close()
+			require.NoError(t, err)
+
+			if !test.invalidOutput {
+				assert.JSONEq(t, test.want.message, string(userResult))
+			}
 		})
 	}
 }
