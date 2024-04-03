@@ -3,11 +3,9 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	db_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -16,116 +14,63 @@ var (
 	ErrInvalidRawUserID = errors.New("invalid raw user id")
 )
 
-type UserAuthorisator interface {
-	AddUser(ctx context.Context, userID entity.UserID) error
-	AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error)
-}
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		zap.L().Info("start user authentication")
 
-type UserAdder interface {
-	AddUser(ctx context.Context, userID entity.UserID) error
-}
+		status := http.StatusOK
+		userIDCookie, err := r.Cookie(entity.UserIDKey)
 
-type UserAuthenticator interface {
-	AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error)
-}
-
-func AuthMiddleware(userAuth UserAuthorisator) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			zap.L().Info("start user authentication")
-
-			userIDCookie, err := r.Cookie(entity.UserIDKey)
-
-			// Cookies doesn't contain user id
-			if err != nil {
-				zap.L().Info("error while getting cookie with user id in user authentication", zap.Error(err))
-				processInvalidUserID(w, r, userAuth)
-				return
+		// Cookies doesn't contain user id
+		if err != nil {
+			if errors.Is(err, http.ErrNoCookie) {
+				zap.L().Info("cookie with user id is not defined")
+			} else {
+				zap.L().Info("error while getting cookie", zap.Error(err))
 			}
 
-			// User id invalid: may be empty
-			rawUserID, err := entity.ValidateCookieUserID(userIDCookie)
-			if err != nil {
-				zap.L().Error("error while validating user id from cookie in user authentication", zap.Error(err))
-				processInvalidUserID(w, r, userAuth)
-				return
-			}
+			status = http.StatusUnauthorized
 
-			userID := entity.UserID(rawUserID)
+			userIDCookie = processInvalidCookie(w)
+		}
 
-			// userID, err := DecodeUserID(rawUserID)
-			// if err != nil {
-			// 	zap.L().Error("error while decoding user id in user authentication", zap.Error(err))
-			// 	if !errors.Is(err, ErrInvalidRawUserID) {
-			// 		w.WriteHeader(http.StatusInternalServerError)
-			// 		return
-			// 	}
+		// User id invalid: may be empty
+		userID, err := entity.ValidateCookieUserID(userIDCookie)
+		if err != nil {
+			zap.L().Error("error while validating user id from cookie in user authentication", zap.Error(err))
+			status = http.StatusUnauthorized
 
-			// 	processInvalidUserID(w, r, userAuth)
-			// 	return
-			// }
+			processInvalidCookie(w)
+		}
 
-			// User id is not in DB
-			userID, err = authenticateUser(userID, userAuth)
-			if err != nil {
-				if errors.Is(err, db_err.ErrUserIDNotFound) {
-					zap.L().Info("authentication failed, create new user")
-					processInvalidUserID(w, r, userAuth)
-				} else {
-					zap.L().Error("internal error while user authentication", zap.Error(err))
-					w.WriteHeader(http.StatusInternalServerError)
-				}
-				return
-			}
+		userCtx := entity.UserIDCtx{
+			UserID:     userID,
+			StatusCode: status,
+		}
 
-			ctx := context.WithValue(r.Context(), entity.UserIDCtxKey{}, userID)
-			r = r.WithContext(ctx)
+		ctx := context.WithValue(r.Context(), entity.UserIDCtxKey{}, userCtx)
+		r = r.WithContext(ctx)
 
-			next.ServeHTTP(w, r)
-		})
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-func processInvalidUserID(w http.ResponseWriter, r *http.Request, userAuth UserAuthorisator) {
-	userID, err := createUserID(userAuth)
-	if err != nil {
-		zap.L().Error("error while creating user id in user authentication", zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+func processInvalidCookie(w http.ResponseWriter) *http.Cookie {
+	userID := createUserID()
 
-	// encodedUserID, err := EncodeUserID(userID)
-	// if err != nil {
-	// 	zap.L().Error("error while encoding user id in user authentication", zap.Error(err))
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
-
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:  entity.UserIDKey,
 		Value: userID.String(),
-	})
-	w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	http.SetCookie(w, cookie)
+
+	return cookie
 }
 
-func createUserID(userAdder UserAdder) (entity.UserID, error) {
+func createUserID() entity.UserID {
 	uuid := uuid.New()
 	userID := entity.UserID(uuid.String())
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	err := userAdder.AddUser(ctx, userID)
-	if err != nil {
-		return "", fmt.Errorf("error while add new user id to storage")
-	}
-
-	return userID, nil
-}
-
-func authenticateUser(userID entity.UserID, auth UserAuthenticator) (entity.UserID, error) {
-	ctx, close := context.WithTimeout(context.Background(), timeout)
-	defer close()
-
-	return auth.AuthUser(ctx, userID)
+	return userID
 }

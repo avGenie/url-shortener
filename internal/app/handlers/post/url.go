@@ -27,7 +27,7 @@ func URLHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 			return
 		}
 
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context")
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -52,7 +52,7 @@ func URLHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outputURL, err := postURLProcessing(saver, ctx, userID, string(inputURL), baseURIPrefix)
+		outputURL, err := postURLProcessing(saver, ctx, userIDCtx.UserID, string(inputURL), baseURIPrefix)
 		if err != nil {
 			zap.L().Error("could not create a short URL", zap.String("error", err.Error()))
 			if errors.Is(err, storage_err.ErrURLAlreadyExists) {

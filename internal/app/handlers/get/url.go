@@ -29,10 +29,15 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		shortURL := chi.URLParam(req, "url")
 
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context")
 			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if userIDCtx.StatusCode == http.StatusUnauthorized {
+			writer.WriteHeader(userIDCtx.StatusCode)
 			return
 		}
 
@@ -50,7 +55,7 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), pingTimeout)
 		defer cancel()
 
-		url, err := getter.GetURL(ctx, userID, *eShortURL)
+		url, err := getter.GetURL(ctx, userIDCtx.UserID, *eShortURL)
 		if err != nil {
 			zap.L().Error(
 				"error while getting url",
@@ -77,18 +82,23 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while all user urls processing")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		if userIDCtx.StatusCode == http.StatusUnauthorized {
+			writer.WriteHeader(userIDCtx.StatusCode)
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		out, err := processAllUSerURL(getter, ctx, userID, baseURIPrefix)
+		out, err := processAllUSerURL(getter, ctx, userIDCtx.UserID, baseURIPrefix)
 		if err != nil {
 			if errors.Is(err, ErrAllURLNotFound) {
 				writer.WriteHeader(http.StatusNoContent)
@@ -97,7 +107,7 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
-		}		
+		}
 
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)
