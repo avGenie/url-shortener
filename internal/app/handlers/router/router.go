@@ -19,7 +19,7 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
-	r.Use(auth.AuthMiddleware(db))
+	r.Use(auth.AuthMiddleware)
 
 	r.Post("/", post.URLHandler(db, config.BaseURIPrefix))
 	r.Post("/api/shorten", post.JSONHandler(db, config.BaseURIPrefix))

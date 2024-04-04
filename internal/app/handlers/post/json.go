@@ -28,9 +28,15 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 			return
 		}
 
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while json processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -53,7 +59,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outputURL, err := postURLProcessing(saver, ctx, userID, inputRequest.URL, baseURIPrefix)
+		outputURL, err := postURLProcessing(saver, ctx, userIDCtx.UserID, inputRequest.URL, baseURIPrefix)
 
 		response := models.Response{
 			URL: outputURL,
@@ -86,9 +92,15 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 			return
 		}
 
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while json batch processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -105,7 +117,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outBatch, err := batchURLProcessing(saver, ctx, userID, batch, baseURIPrefix)
+		outBatch, err := batchURLProcessing(saver, ctx, userIDCtx.UserID, batch, baseURIPrefix)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return

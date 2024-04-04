@@ -115,57 +115,11 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID
 }
 
 func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create get url transaction in postgres: %w", err)
-	}
-	query := `SELECT url, deleted FROM url WHERE user_id = @userID AND short_url = @shortUrl`
-	args := pgx.NamedArgs{
-		"userID":   userID.String(),
-		"shortUrl": key.String(),
+	if !userID.IsValid() {
+		return s.getURL(ctx, key)
 	}
 
-	row := s.db.QueryRowContext(ctx, query, args)
-	if row == nil {
-		return nil, fmt.Errorf("error in postgres request execution while getting url")
-	}
-
-	if row.Err() != nil {
-		return nil, fmt.Errorf("error in postgres request execution while getting url: %w", row.Err())
-	}
-
-	var dbURL string
-	var deleted bool
-	err = row.Scan(&dbURL, &deleted)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, api.ErrShortURLNotFound
-		}
-		return nil, fmt.Errorf("error in postgres processing response row while getting url: %w", err)
-	}
-
-	if deleted {
-		err = deleteURL(s.db, ctx, userID.String(), key.String())
-		if err != nil {
-			zap.L().Error(
-				"unable to delete url while getting from postgres",
-				zap.Error(err),
-				zap.String("short_url", key.String()))
-		}
-
-		return nil, api.ErrAllURLsDeleted
-	}
-	err = tx.Commit()
-	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction while getting url in postgres: %w", err)
-	}
-
-	url, err := entity.NewURL(dbURL)
-	if err != nil {
-		return nil, fmt.Errorf("error in postgres creating url while getting url: %w", err)
-	}
-
-	return url, nil
+	return s.getUserURL(ctx, userID, key)
 }
 
 func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
@@ -230,46 +184,66 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 	return urlsBatch, nil
 }
 
-func (s *PostgresStorage) AddUser(ctx context.Context, userID entity.UserID) error {
-	query := `INSERT INTO users VALUES(@usersId)`
+func (s *PostgresStorage) getURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+	query := `SELECT url FROM url WHERE short_url=@shortUrl`
 	args := pgx.NamedArgs{
-		"usersId": userID.String(),
+		"shortUrl": key.String(),
 	}
 
-	_, err := s.db.ExecContext(ctx, query, args)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return fmt.Errorf("error while adding user to postgres: %w", api.ErrUserAlreadyExists)
-		}
-
-		return fmt.Errorf("unable to add user to postgres: %w", err)
-	}
-
-	return nil
-}
-
-func (s *PostgresStorage) AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error) {
-	query := `SELECT * FROM users WHERE id=$1`
-	row := s.db.QueryRowContext(ctx, query, userID.String())
+	var dbURL string
+	row := s.db.QueryRowContext(ctx, query, args)
 	if row == nil {
-		return "", fmt.Errorf("error while postgres prepare row")
+		return nil, fmt.Errorf("error while postgres request execution")
 	}
 
 	if row.Err() != nil {
-		return "", fmt.Errorf("error while postgres request execution: %w", row.Err())
-	}
-	var id string
-	err := row.Scan(&id)
-	if err != nil {
-		fmt.Println(err.Error())
-		if err == sql.ErrNoRows {
-			return "", api.ErrUserIDNotFound
-		}
-		return "", fmt.Errorf("error while processing response row in postgres: %w", err)
+		return nil, fmt.Errorf("error while postgres request execution: %w", row.Err())
 	}
 
-	return userID, nil
+	err := row.Scan(&dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error while processing response row in postgres: %w", err)
+	}
+
+	url, err := entity.NewURL(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating url in postgres: %w", err)
+	}
+
+	return url, nil
+}
+
+func (s *PostgresStorage) getUserURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
+	query := `SELECT url FROM url WHERE user_id = @userID AND short_url = @shortUrl`
+	args := pgx.NamedArgs{
+		"userID":   userID.String(),
+		"shortUrl": key.String(),
+	}
+
+	row := s.db.QueryRowContext(ctx, query, args)
+	if row == nil {
+		return nil, fmt.Errorf("error in postgres request execution while getting url")
+	}
+
+	if row.Err() != nil {
+		return nil, fmt.Errorf("error in postgres request execution while getting url: %w", row.Err())
+	}
+
+	var dbURL string
+	err := row.Scan(&dbURL)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, api.ErrShortURLNotFound
+		}
+		return nil, fmt.Errorf("error in postgres processing response row while getting url: %w", err)
+	}
+
+	url, err := entity.NewURL(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error in postgres creating url while getting url: %w", err)
+	}
+
+	return url, nil
 }
 
 func (s *PostgresStorage) DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error {

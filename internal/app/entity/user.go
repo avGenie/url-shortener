@@ -11,6 +11,11 @@ const (
 
 type UserIDCtxKey struct{}
 
+type UserIDCtx struct {
+	UserID     UserID
+	StatusCode int
+}
+
 type UserID string
 
 func (u UserID) String() string {
@@ -21,12 +26,12 @@ func (u UserID) IsValid() bool {
 	return len(u.String()) != 0
 }
 
-func ValidateCookieUserID(cookie *http.Cookie) (string, error) {
+func ValidateCookieUserID(cookie *http.Cookie) (UserID, error) {
 	rawUserID := cookie.Value
 
 	if len(rawUserID) == 0 {
 		return "", fmt.Errorf("cookie of user id is empty")
 	}
 
-	return rawUserID, nil
+	return UserID(rawUserID), nil
 }

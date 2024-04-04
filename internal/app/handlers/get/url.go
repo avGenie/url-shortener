@@ -30,11 +30,16 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		shortURL := chi.URLParam(req, "url")
 
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
-		if !ok {
-			zap.L().Error("user id couldn't obtain from context")
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
+		var userID entity.UserID
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
+		if ok {
+			if userIDCtx.StatusCode == http.StatusOK {
+				userID = userIDCtx.UserID
+			} else {
+				zap.L().Info("user id couldn't obtain from context")
+			}
+		} else {
+			zap.L().Info("user id is empty from context")
 		}
 
 		eShortURL, err := entity.ParseURL(shortURL)
@@ -81,18 +86,23 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while all user urls processing")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		if code := validateUserIDCtx(userIDCtx); code != http.StatusOK {
+			writer.WriteHeader(code)
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		out, err := processAllUSerURL(getter, ctx, userID, baseURIPrefix)
+		out, err := processAllUSerURL(getter, ctx, userIDCtx.UserID, baseURIPrefix)
 		if err != nil {
 			if errors.Is(err, ErrAllURLNotFound) {
 				writer.WriteHeader(http.StatusNoContent)
@@ -101,10 +111,24 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
-		}		
+		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusCreated)
+		writer.WriteHeader(http.StatusOK)
 		writer.Write(out)
 	}
+}
+
+func validateUserIDCtx(userIDCtx entity.UserIDCtx) int {
+	if userIDCtx.StatusCode == http.StatusUnauthorized {
+		zap.L().Error("user id couldn't obtain from context")
+		return userIDCtx.StatusCode
+	}
+
+	if len(userIDCtx.UserID.String()) == 0 {
+		zap.L().Error("empty user id from context")
+		return http.StatusInternalServerError
+	}
+
+	return http.StatusOK
 }
