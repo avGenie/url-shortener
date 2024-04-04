@@ -11,6 +11,7 @@ import (
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
+
 	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/handlers/get/mock"
 	"github.com/avGenie/url-shortener/internal/app/logger"
@@ -42,14 +43,17 @@ func TestGetHandler(t *testing.T) {
 	tests := []struct {
 		name              string
 		request           string
-		userID            entity.UserID
+		userIDCtx         entity.UserIDCtx
 		exitBeforeGetting bool
 		want              want
 	}{
 		{
 			name:    "correct input data",
 			request: "aHR0cHM6",
-			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
 
 			want: want{
 				statusCode:  http.StatusTemporaryRedirect,
@@ -63,7 +67,10 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:    "request without id",
 			request: "",
-			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
@@ -77,7 +84,10 @@ func TestGetHandler(t *testing.T) {
 		{
 			name:    "missing URL",
 			request: "/fsdfuytu",
-			userID:  entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
 
 			want: want{
 				statusCode:  http.StatusBadRequest,
@@ -89,9 +99,27 @@ func TestGetHandler(t *testing.T) {
 			},
 		},
 		{
-			name:              "missing user id",
-			request:           "/aHR0cHM6",
-			userID:            entity.UserID(""),
+			name:    "unathorized user",
+			request: "/aHR0cHM6",
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "",
+				StatusCode: http.StatusUnauthorized,
+			},
+			exitBeforeGetting: true,
+
+			want: want{
+				statusCode:  http.StatusUnauthorized,
+				contentType: "",
+				location:    "",
+			},
+		},
+		{
+			name:    "missing user id",
+			request: "/aHR0cHM6",
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "",
+				StatusCode: http.StatusOK,
+			},
 			exitBeforeGetting: true,
 
 			want: want{
@@ -118,9 +146,7 @@ func TestGetHandler(t *testing.T) {
 			}
 
 			request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, rctx))
-			if len(test.userID) != 0 {
-				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
-			}
+			request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userIDCtx))
 
 			handler := URLHandler(s)
 			handler(writer, request)
@@ -193,7 +219,7 @@ func TestGetUserURLHandler(t *testing.T) {
 		name               string
 		baseURIPrefix      string
 		outputStorageBatch models.AllUrlsBatch
-		userID             entity.UserID
+		userIDCtx          entity.UserIDCtx
 		invalidOutput      bool
 		exitBeforeGetting  bool
 		want               want
@@ -202,7 +228,10 @@ func TestGetUserURLHandler(t *testing.T) {
 			name:               "correct input data",
 			baseURIPrefix:      baseURIPrefix,
 			outputStorageBatch: outputStorageBatch,
-			userID:             entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
 
 			want: want{
 				statusCode:  http.StatusCreated,
@@ -215,8 +244,11 @@ func TestGetUserURLHandler(t *testing.T) {
 			name:               "empty output",
 			baseURIPrefix:      baseURIPrefix,
 			outputStorageBatch: models.AllUrlsBatch{},
-			userID:             entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
-			invalidOutput:      true,
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
+			invalidOutput: true,
 
 			want: want{
 				statusCode: http.StatusNoContent,
@@ -227,8 +259,11 @@ func TestGetUserURLHandler(t *testing.T) {
 			name:               "error while getting from storage",
 			baseURIPrefix:      baseURIPrefix,
 			outputStorageBatch: models.AllUrlsBatch{},
-			userID:             entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
-			invalidOutput:      true,
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
+			invalidOutput: true,
 
 			want: want{
 				statusCode: http.StatusInternalServerError,
@@ -236,13 +271,46 @@ func TestGetUserURLHandler(t *testing.T) {
 			},
 		},
 		{
-			name:              "empty base URI prefix",
-			userID:            entity.UserID("ac2a4811-4f10-487f-bde3-e39a14af7cd8"),
+			name: "empty base URI prefix",
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
+				StatusCode: http.StatusOK,
+			},
 			invalidOutput:     true,
 			exitBeforeGetting: true,
 
 			want: want{
 				statusCode: http.StatusInternalServerError,
+			},
+		},
+		{
+			name:    "unathorized user",
+			baseURIPrefix: baseURIPrefix,
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "",
+				StatusCode: http.StatusUnauthorized,
+			},
+			invalidOutput:     true,
+			exitBeforeGetting: true,
+
+			want: want{
+				statusCode:  http.StatusUnauthorized,
+				contentType: "",
+			},
+		},
+		{
+			name:    "missing user id",
+			baseURIPrefix: baseURIPrefix,
+			userIDCtx: entity.UserIDCtx{
+				UserID:     "",
+				StatusCode: http.StatusOK,
+			},
+			invalidOutput:     true,
+			exitBeforeGetting: true,
+
+			want: want{
+				statusCode:  http.StatusInternalServerError,
+				contentType: "",
 			},
 		},
 	}
@@ -252,9 +320,7 @@ func TestGetUserURLHandler(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 			writer := httptest.NewRecorder()
 
-			if len(test.userID) != 0 {
-				request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userID))
-			}
+			request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userIDCtx))
 
 			if test.exitBeforeGetting {
 				s.EXPECT().GetAllURLByUserID(gomock.Any(), gomock.Any()).Times(0)
@@ -328,7 +394,6 @@ func TestGetPingDBHandler(t *testing.T) {
 				PingServer(gomock.Any()).
 				Return(test.want.err)
 
-			// pingDB(s, writer, request)
 			handler := PingDBHandler(s)
 			handler(writer, request)
 

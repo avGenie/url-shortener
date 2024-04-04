@@ -35,6 +35,12 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 			return
 		}
 
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		inputRequest := &models.Request{}
 		err := json.NewDecoder(req.Body).Decode(&inputRequest)
 		defer req.Body.Close()
@@ -89,6 +95,12 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while json batch processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}

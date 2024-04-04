@@ -34,6 +34,12 @@ func URLHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 			return
 		}
 
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		inputURL, err := io.ReadAll(req.Body)
 		defer req.Body.Close()
 

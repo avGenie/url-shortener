@@ -36,8 +36,8 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 			return
 		}
 
-		if userIDCtx.StatusCode == http.StatusUnauthorized {
-			writer.WriteHeader(userIDCtx.StatusCode)
+		if code := validateUserIDCtx(userIDCtx); code != http.StatusOK {
+			writer.WriteHeader(code)
 			return
 		}
 
@@ -90,8 +90,8 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 			return
 		}
 
-		if userIDCtx.StatusCode == http.StatusUnauthorized {
-			writer.WriteHeader(userIDCtx.StatusCode)
+		if code := validateUserIDCtx(userIDCtx); code != http.StatusOK {
+			writer.WriteHeader(code)
 			return
 		}
 
@@ -113,4 +113,18 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 		writer.WriteHeader(http.StatusCreated)
 		writer.Write(out)
 	}
+}
+
+func validateUserIDCtx(userIDCtx entity.UserIDCtx) int {
+	if userIDCtx.StatusCode == http.StatusUnauthorized {
+		zap.L().Error("user id couldn't obtain from context")
+		return userIDCtx.StatusCode
+	}
+
+	if len(userIDCtx.UserID.String()) == 0 {
+		zap.L().Error("empty user id from context")
+		return http.StatusInternalServerError
+	}
+
+	return http.StatusOK
 }
