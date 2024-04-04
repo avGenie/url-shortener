@@ -36,8 +36,9 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 			return
 		}
 
-		if code := validateUserIDCtx(userIDCtx); code != http.StatusOK {
-			writer.WriteHeader(code)
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while getting url")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
