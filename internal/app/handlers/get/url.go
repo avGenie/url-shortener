@@ -29,17 +29,16 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		shortURL := chi.URLParam(req, "url")
 
+		var userID entity.UserID
 		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
-		if !ok {
-			zap.L().Error("user id couldn't obtain from context")
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		if len(userIDCtx.UserID.String()) == 0 {
-			zap.L().Error("empty user id from context while getting url")
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
+		if ok {
+			if userIDCtx.StatusCode == http.StatusOK {
+				userID = userIDCtx.UserID
+			} else {
+				zap.L().Info("user id couldn't obtain from context")
+			}
+		} else {
+			zap.L().Info("user id is empty from context")
 		}
 
 		eShortURL, err := entity.ParseURL(shortURL)
@@ -56,7 +55,7 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), pingTimeout)
 		defer cancel()
 
-		url, err := getter.GetURL(ctx, userIDCtx.UserID, *eShortURL)
+		url, err := getter.GetURL(ctx, userID, *eShortURL)
 		if err != nil {
 			zap.L().Error(
 				"error while getting url",

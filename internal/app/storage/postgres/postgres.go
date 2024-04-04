@@ -114,36 +114,11 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID
 }
 
 func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
-	query := `SELECT url FROM url WHERE user_id = @userID AND short_url = @shortUrl`
-	args := pgx.NamedArgs{
-		"userID":   userID.String(),
-		"shortUrl": key.String(),
+	if !userID.IsValid() {
+		return s.getURL(ctx, key)
 	}
 
-	row := s.db.QueryRowContext(ctx, query, args)
-	if row == nil {
-		return nil, fmt.Errorf("error in postgres request execution while getting url")
-	}
-
-	if row.Err() != nil {
-		return nil, fmt.Errorf("error in postgres request execution while getting url: %w", row.Err())
-	}
-
-	var dbURL string
-	err := row.Scan(&dbURL)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, api.ErrShortURLNotFound
-		}
-		return nil, fmt.Errorf("error in postgres processing response row while getting url: %w", err)
-	}
-
-	url, err := entity.NewURL(dbURL)
-	if err != nil {
-		return nil, fmt.Errorf("error in postgres creating url while getting url: %w", err)
-	}
-
-	return url, nil
+	return s.getUserURL(ctx, userID, key)
 }
 
 func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
@@ -176,6 +151,68 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 	}
 
 	return urlsBatch, nil
+}
+
+func (s *PostgresStorage) getURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+	query := `SELECT url FROM url WHERE short_url=@shortUrl`
+	args := pgx.NamedArgs{
+		"shortUrl": key.String(),
+	}
+
+	var dbURL string
+	row := s.db.QueryRowContext(ctx, query, args)
+	if row == nil {
+		return nil, fmt.Errorf("error while postgres request execution")
+	}
+
+	if row.Err() != nil {
+		return nil, fmt.Errorf("error while postgres request execution: %w", row.Err())
+	}
+
+	err := row.Scan(&dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error while processing response row in postgres: %w", err)
+	}
+
+	url, err := entity.NewURL(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating url in postgres: %w", err)
+	}
+
+	return url, nil
+}
+
+func (s *PostgresStorage) getUserURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
+	query := `SELECT url FROM url WHERE user_id = @userID AND short_url = @shortUrl`
+	args := pgx.NamedArgs{
+		"userID":   userID.String(),
+		"shortUrl": key.String(),
+	}
+
+	row := s.db.QueryRowContext(ctx, query, args)
+	if row == nil {
+		return nil, fmt.Errorf("error in postgres request execution while getting url")
+	}
+
+	if row.Err() != nil {
+		return nil, fmt.Errorf("error in postgres request execution while getting url: %w", row.Err())
+	}
+
+	var dbURL string
+	err := row.Scan(&dbURL)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, api.ErrShortURLNotFound
+		}
+		return nil, fmt.Errorf("error in postgres processing response row while getting url: %w", err)
+	}
+
+	url, err := entity.NewURL(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error in postgres creating url while getting url: %w", err)
+	}
+
+	return url, nil
 }
 
 func migration(db *sql.DB) error {

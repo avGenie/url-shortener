@@ -98,21 +98,6 @@ func TestGetHandler(t *testing.T) {
 				message:     errors.ShortURLNotInDB + "\n",
 			},
 		},
-		{
-			name:    "missing user id",
-			request: "/aHR0cHM6",
-			userIDCtx: entity.UserIDCtx{
-				UserID:     "",
-				StatusCode: http.StatusOK,
-			},
-			exitBeforeGetting: true,
-
-			want: want{
-				statusCode:  http.StatusInternalServerError,
-				contentType: "",
-				location:    "",
-			},
-		},
 	}
 
 	for _, test := range tests {
