@@ -204,7 +204,7 @@ func TestGetUserURLHandler(t *testing.T) {
 			},
 
 			want: want{
-				statusCode:  http.StatusCreated,
+				statusCode:  http.StatusOK,
 				contentType: "application/json",
 				expectErr:   nil,
 				message:     outputBatch,
