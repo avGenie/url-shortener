@@ -72,7 +72,7 @@ func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key enti
 	if s.file == nil {
 		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
 	}
-	res, ok := s.cache.Get(userID, key)
+	res, ok := s.cache.Get(key)
 	s.mutex.RUnlock()
 
 	if !ok {
@@ -87,12 +87,8 @@ func (s *FileStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserI
 	if s.file == nil {
 		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
 	}
-	urls, ok := s.cache.GetByUserID(userID)
+	urls := s.cache.GetAllURL()
 	s.mutex.RUnlock()
-
-	if !ok {
-		return nil, fmt.Errorf("error while getting all user url from ts local storage: %w", api.ErrShortURLNotFound)
-	}
 
 	var allURLs models.AllUrlsBatch
 	for key, value := range urls {
@@ -116,13 +112,8 @@ func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, va
 		return fmt.Errorf("error while save url to file storage: %w", api.ErrFileStorageNotOpen)
 	}
 
-	if _, ok := s.cache.Get(userID, key); ok {
-		return fmt.Errorf("error while save url to file storage: %w", api.ErrURLAlreadyExists)
-	}
-
 	storageRec := &entity.URLRecord{
 		ID:          s.lastID + 1,
-		UserID:      string(userID),
 		ShortURL:    key.Path,
 		OriginalURL: value.String(),
 	}
@@ -134,7 +125,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, va
 
 	s.file.Sync()
 
-	s.cache.Add(userID, key, value)
+	s.cache.Add(key, value)
 	s.lastID = storageRec.ID
 
 	return nil
@@ -161,11 +152,10 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, ba
 			return nil, fmt.Errorf("failed to create short url from batch in file storage: %w", err)
 		}
 
-		localUrls.Add(userID, *key, *value)
+		localUrls.Add(*key, *value)
 
 		storageRec := &entity.URLRecord{
 			ID:          s.lastID + 1,
-			UserID:      string(userID),
 			ShortURL:    key.Path,
 			OriginalURL: value.String(),
 		}
@@ -184,32 +174,6 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, ba
 	s.cache.Merge(*localUrls)
 
 	return batch, nil
-}
-
-func (s *FileStorage) AddUser(ctx context.Context, userID entity.UserID) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	_, ok := s.cache.GetByUserID(userID)
-	if ok {
-		return fmt.Errorf("error while save url to ts local storage: %w", api.ErrUserAlreadyExists)
-	}
-
-	s.cache.AddUserID(userID)
-
-	return nil
-}
-
-func (s *FileStorage) AuthUser(ctx context.Context, userID entity.UserID) (entity.UserID, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	_, ok := s.cache.GetByUserID(userID)
-	if !ok {
-		return "", fmt.Errorf("error while save url to ts local storage: %w", api.ErrUserIDNotFound)
-	}
-
-	return userID, nil
 }
 
 func (s *FileStorage) Close() entity.Response {
@@ -254,7 +218,7 @@ func (s *FileStorage) fillCacheFromFile() error {
 			return err
 		}
 
-		s.cache.Add(entity.UserID(record.UserID), *key, *value)
+		s.cache.Add(*key, *value)
 		s.lastID = record.ID
 	}
 
