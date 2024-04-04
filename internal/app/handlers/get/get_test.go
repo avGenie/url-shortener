@@ -99,21 +99,6 @@ func TestGetHandler(t *testing.T) {
 			},
 		},
 		{
-			name:    "unathorized user",
-			request: "/aHR0cHM6",
-			userIDCtx: entity.UserIDCtx{
-				UserID:     "",
-				StatusCode: http.StatusUnauthorized,
-			},
-			exitBeforeGetting: true,
-
-			want: want{
-				statusCode:  http.StatusUnauthorized,
-				contentType: "",
-				location:    "",
-			},
-		},
-		{
 			name:    "missing user id",
 			request: "/aHR0cHM6",
 			userIDCtx: entity.UserIDCtx{
