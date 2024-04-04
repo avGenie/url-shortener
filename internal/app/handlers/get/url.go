@@ -110,7 +110,7 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusCreated)
+		writer.WriteHeader(http.StatusOK)
 		writer.Write(out)
 	}
 }
