@@ -3,12 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
+	handler_err "github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"go.uber.org/zap"
@@ -22,13 +23,13 @@ const (
 type DeleteHandler struct {
 	storage storage.Storage
 
-	msgChan chan entity.DeletedURL
+	msgChan chan []entity.DeletedURL
 }
 
 func NewDeleteHandler(storage storage.Storage) *DeleteHandler {
 	instance := &DeleteHandler{
 		storage: storage,
-		msgChan: make(chan entity.DeletedURL, 100),
+		msgChan: make(chan []entity.DeletedURL),
 	}
 
 	go instance.flushDeletedURLs()
@@ -56,33 +57,22 @@ func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 }
 
 func (h *DeleteHandler) flushDeletedURLs() {
-	ticker := time.NewTicker(tickerTime)
+	for urls := range h.msgChan {
+		ctx, cancel := context.WithTimeout(context.Background(), contextTime)
 
-	var storageBatch entity.DeletedURLBatch
-	for {
-		select {
-		case url, ok := <- h.msgChan:
-			if !ok {
-				return
+		err := h.storage.DeleteBatchURL(ctx, urls)
+		if err != nil {
+			switch {
+			case errors.Is(err, context.Canceled):
+				zap.L().Error("context canceled while flushing deleted urls", zap.String("error", err.Error()))
+			case errors.Is(err, context.DeadlineExceeded):
+				zap.L().Error("context deadline exceeded while flushing deleted urls", zap.String("error", err.Error()))
+			default:
+				zap.L().Error("error while flushing deleted urls", zap.Error(err))
 			}
-
-			storageBatch = append(storageBatch, url)
-		case <- ticker.C:
-			if len(storageBatch) == 0 {
-				continue
-			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), contextTime)
-			defer cancel()
-
-			err := h.storage.DeleteBatchURL(ctx, storageBatch)
-			if err != nil {
-				zap.L().Error("cannot delete urls", zap.Error(err))
-				continue
-			}
-
-			storageBatch = nil
 		}
+
+		cancel()
 	}
 }
 
@@ -91,16 +81,19 @@ func (h *DeleteHandler) processDeletedURLs(userID entity.UserID, reader io.ReadC
 	err := json.NewDecoder(reader).Decode(&batch)
 	if err != nil {
 		zap.L().Error("cannot process input user urls for deleting", zap.Error(err))
-		return errors.ErrWrongDeletedURLFormat
+		return handler_err.ErrWrongDeletedURLFormat
 	}
 	defer reader.Close()
 
+	resURLBatch := make([]entity.DeletedURL, 0, len(batch))
 	for _, url := range batch {
-		h.msgChan <- entity.DeletedURL{
+		resURLBatch = append(resURLBatch, entity.DeletedURL{
 			UserID:   userID.String(),
 			ShortURL: url,
-		}
+		})
 	}
+
+	h.msgChan <- resURLBatch
 
 	return nil
 }
