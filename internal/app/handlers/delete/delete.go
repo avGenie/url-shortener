@@ -11,24 +11,27 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	handler_err "github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
-	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"go.uber.org/zap"
 )
 
 const (
-	tickerTime = 5 * time.Second
+	tickerTime  = 5 * time.Second
 	contextTime = 3 * time.Second
 )
 
+type AllURLDeleter interface {
+	DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error
+}
+
 type DeleteHandler struct {
-	storage storage.Storage
+	deleter AllURLDeleter
 
 	msgChan chan []entity.DeletedURL
 }
 
-func NewDeleteHandler(storage storage.Storage) *DeleteHandler {
+func NewDeleteHandler(deleter AllURLDeleter) *DeleteHandler {
 	instance := &DeleteHandler{
-		storage: storage,
+		deleter: deleter,
 		msgChan: make(chan []entity.DeletedURL),
 	}
 
@@ -41,7 +44,13 @@ func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
-			zap.L().Error("user id couldn't obtain from context while all user urls processing")
+			zap.L().Error("user id couldn't obtain from context while all user urls deleting")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting all user urls deleting")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -60,7 +69,7 @@ func (h *DeleteHandler) flushDeletedURLs() {
 	for urls := range h.msgChan {
 		ctx, cancel := context.WithTimeout(context.Background(), contextTime)
 
-		err := h.storage.DeleteBatchURL(ctx, urls)
+		err := h.deleter.DeleteBatchURL(ctx, urls)
 		if err != nil {
 			switch {
 			case errors.Is(err, context.Canceled):
