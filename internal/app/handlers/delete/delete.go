@@ -38,14 +38,14 @@ func NewDeleteHandler(storage storage.Storage) *DeleteHandler {
 
 func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
-		userID, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserID)
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
 		if !ok {
 			zap.L().Error("user id couldn't obtain from context while all user urls processing")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		err := h.processDeletedURLs(userID, req.Body)
+		err := h.processDeletedURLs(userIDCtx.UserID, req.Body)
 		if err != nil {
 			writer.WriteHeader(http.StatusBadRequest)
 			return
