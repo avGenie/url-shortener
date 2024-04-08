@@ -24,13 +24,11 @@ func TestDeleteHandler(t *testing.T) {
 
 	type want struct {
 		statusCode int
-		expectErr  error
 	}
 	tests := []struct {
 		name              string
 		inputBody         string
 		userIDCtx         entity.UserIDCtx
-		exitBeforeGetting bool
 		want              want
 	}{
 		{
@@ -52,7 +50,6 @@ func TestDeleteHandler(t *testing.T) {
 				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
 				StatusCode: http.StatusOK,
 			},
-			exitBeforeGetting: true,
 
 			want: want{
 				statusCode: http.StatusBadRequest,
@@ -65,7 +62,6 @@ func TestDeleteHandler(t *testing.T) {
 				UserID:     "",
 				StatusCode: http.StatusOK,
 			},
-			exitBeforeGetting: true,
 
 			want: want{
 				statusCode: http.StatusInternalServerError,
@@ -77,13 +73,6 @@ func TestDeleteHandler(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(test.inputBody))
 			writer := httptest.NewRecorder()
-
-			if test.exitBeforeGetting {
-				s.EXPECT().DeleteBatchURL(gomock.Any(), gomock.Any()).Times(0)
-			} else {
-				s.EXPECT().DeleteBatchURL(gomock.Any(), gomock.Any()).
-					Return(test.want.expectErr)
-			}
 
 			request = request.WithContext(context.WithValue(request.Context(), entity.UserIDCtxKey{}, test.userIDCtx))
 

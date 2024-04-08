@@ -18,7 +18,7 @@ import (
 const (
 	flushBufLen = 100
 
-	tickerTime  = 50 * time.Second
+	tickerTime  = 5 * time.Second
 	contextTime = 3 * time.Second
 	stopTimeout = 5 * time.Second
 )
