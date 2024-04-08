@@ -12,10 +12,26 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
-	r := chi.NewRouter()
+type Router struct {
+	Mux *chi.Mux
 
-	deleteHandle := handlers.NewDeleteHandler(db)
+	deleteHandler *handlers.DeleteHandler
+}
+
+func NewRouter(config config.Config, db storage.Storage) *Router {
+	deleteHandler := handlers.NewDeleteHandler(db)
+	return &Router{
+		Mux:           createRouter(config, deleteHandler, db),
+		deleteHandler: deleteHandler,
+	}
+}
+
+func (r *Router) Stop() {
+	r.deleteHandler.Stop()
+}
+
+func createRouter(config config.Config, deleteHandler *handlers.DeleteHandler, db storage.Storage) *chi.Mux {
+	r := chi.NewRouter()
 
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
@@ -28,8 +44,8 @@ func CreateRouter(config config.Config, db storage.Storage) *chi.Mux {
 	r.Get("/{url}", get.URLHandler(db))
 	r.Get("/ping", get.PingDBHandler(db))
 	r.Get("/api/user/urls", get.UserURLsHandler(db, config.BaseURIPrefix))
-	
-	r.Delete("/api/user/urls", deleteHandle.DeleteUserURLHandler())
+
+	r.Delete("/api/user/urls", deleteHandler.DeleteUserURLHandler())
 
 	return r
 }

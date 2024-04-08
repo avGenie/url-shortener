@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
@@ -15,8 +16,11 @@ import (
 )
 
 const (
-	tickerTime  = 5 * time.Second
+	flushBufLen = 100
+
+	tickerTime  = 50 * time.Second
 	contextTime = 3 * time.Second
+	stopTimeout = 5 * time.Second
 )
 
 type AllURLDeleter interface {
@@ -26,16 +30,24 @@ type AllURLDeleter interface {
 type DeleteHandler struct {
 	deleter AllURLDeleter
 
-	msgChan chan []entity.DeletedURL
+	wg      *sync.WaitGroup
+	done    chan struct{}
+	msgChan chan entity.DeletedURLBatch
 }
 
 func NewDeleteHandler(deleter AllURLDeleter) *DeleteHandler {
 	instance := &DeleteHandler{
 		deleter: deleter,
-		msgChan: make(chan []entity.DeletedURL),
+		wg:      &sync.WaitGroup{},
+		done:    make(chan struct{}),
+		msgChan: make(chan entity.DeletedURLBatch),
 	}
 
-	go instance.flushDeletedURLs()
+	instance.wg.Add(1)
+	go func() {
+		defer instance.wg.Done()
+		instance.flushDeletedURLs()
+	}()
 
 	return instance
 }
@@ -65,11 +77,39 @@ func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 	}
 }
 
-func (h *DeleteHandler) flushDeletedURLs() {
-	for urls := range h.msgChan {
-		ctx, cancel := context.WithTimeout(context.Background(), contextTime)
+func (h *DeleteHandler) Stop() {
+	sync.OnceFunc(func() {
+		close(h.done)
+	})()
 
-		err := h.deleter.DeleteBatchURL(ctx, urls)
+	ready := make(chan bool)
+	go func() {
+		defer close(ready)
+		h.wg.Wait()
+	}()
+
+	// устанавливаем таймаут на ожидание сброса в БД последней порции
+	select {
+	case <-time.After(stopTimeout):
+		zap.L().Error("timeout stopped while sending data to the storage while shutting down")
+		return
+	case <-ready:
+		zap.L().Info("succsessful sending data to the storage while shutting down")
+		return
+	}
+}
+
+func (h *DeleteHandler) flushDeletedURLs() {
+	ticker := time.NewTicker(tickerTime)
+	storageBatch := make([]entity.DeletedURL, 0, flushBufLen)
+
+	flush := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), contextTime)
+		defer cancel()
+
+		zap.L().Debug("flushing deleted urls", zap.Int("urls_count", len(storageBatch)))
+
+		err := h.deleter.DeleteBatchURL(ctx, storageBatch)
 		if err != nil {
 			switch {
 			case errors.Is(err, context.Canceled):
@@ -79,9 +119,37 @@ func (h *DeleteHandler) flushDeletedURLs() {
 			default:
 				zap.L().Error("error while flushing deleted urls", zap.Error(err))
 			}
+
+			return
 		}
 
-		cancel()
+		storageBatch = storageBatch[:0:flushBufLen]
+	}
+
+	for {
+		select {
+		case <-h.done:
+			zap.L().Info("shutting down server; last flushing")
+			flush()
+			return
+		case urls, ok := <- h.msgChan:
+			if !ok {
+				return
+			}
+
+			if len(storageBatch) + len(urls) > flushBufLen {
+				flush()
+			}
+
+			storageBatch = append(storageBatch, urls...)
+		case <- ticker.C:
+			if len(storageBatch) == 0 {
+				continue
+			}
+
+			zap.L().Debug("flushing deleted urls by ticker")
+			flush()
+		}
 	}
 }
 
