@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/models"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/avGenie/url-shortener/internal/app/storage/local"
@@ -66,7 +67,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 }
 
 // Returns an element from the map
-func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	if s.file == nil {
 		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
@@ -81,19 +82,34 @@ func (s *FileStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, 
 	return &res, nil
 }
 
+func (s *FileStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
+	s.mutex.RLock()
+	if s.file == nil {
+		return nil, fmt.Errorf("error while getting url from file: %w", api.ErrFileStorageNotOpen)
+	}
+	urls := s.cache.GetAllURL()
+	s.mutex.RUnlock()
+
+	var allURLs models.AllUrlsBatch
+	for key, value := range urls {
+		allURLs = append(allURLs, models.AllUrlsResponse{
+			ShortURL:    key.String(),
+			OriginalURL: value.String(),
+		})
+	}
+
+	return allURLs, nil
+}
+
 // Adds the given value under the specified key
 //
 // Returns `true` if element has been added to the storage.
-func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
+func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	if s.file == nil {
 		return fmt.Errorf("error while save url to file storage: %w", api.ErrFileStorageNotOpen)
-	}
-
-	if _, ok := s.cache.Get(key); ok {
-		return fmt.Errorf("error while save url to file storage: %w", api.ErrURLAlreadyExists)
 	}
 
 	storageRec := &entity.URLRecord{
@@ -116,7 +132,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, key, value entity.URL) error 
 }
 
 // Adds elements from the given batch to the file storage
-func (s *FileStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 

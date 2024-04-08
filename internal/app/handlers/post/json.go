@@ -24,7 +24,20 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 
 		if baseURIPrefix == "" {
 			zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
+		if !ok {
+			zap.L().Error("user id couldn't obtain from context while json processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -46,7 +59,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outputURL, err := postURLProcessing(saver, ctx, inputRequest.URL, baseURIPrefix)
+		outputURL, err := postURLProcessing(saver, ctx, userIDCtx.UserID, inputRequest.URL, baseURIPrefix)
 
 		response := models.Response{
 			URL: outputURL,
@@ -59,7 +72,7 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 				return
 			}
 
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -75,7 +88,20 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 
 		if baseURIPrefix == "" {
 			zap.L().Error("invalid base URI prefix", zap.String("base URI prefix", baseURIPrefix))
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
+		if !ok {
+			zap.L().Error("user id couldn't obtain from context while json batch processing")
+			writer.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if len(userIDCtx.UserID.String()) == 0 {
+			zap.L().Error("empty user id from context while posting user url")
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -91,7 +117,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outBatch, err := batchURLProcessing(saver, ctx, batch, baseURIPrefix)
+		outBatch, err := batchURLProcessing(saver, ctx, userIDCtx.UserID, batch, baseURIPrefix)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -100,7 +126,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		out, err := json.Marshal(outBatch)
 		if err != nil {
 			zap.L().Error("error while converting storage url to output", zap.Error(err))
-			http.Error(writer, post_err.InternalServerError, http.StatusInternalServerError)
+			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 

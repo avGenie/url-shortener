@@ -19,6 +19,10 @@ func (s *LocalStorage) Get(key entity.URL) (entity.URL, bool) {
 	return res, ok
 }
 
+func (s *LocalStorage) GetAllURL() (map[entity.URL]entity.URL) {
+	return s.urls
+}
+
 // Adds the given value under the specified key
 func (s *LocalStorage) Add(key, value entity.URL) {
 	s.urls[key] = value

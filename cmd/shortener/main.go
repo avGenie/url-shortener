@@ -1,19 +1,24 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
-	"github.com/avGenie/url-shortener/internal/app/handlers/router"
+	handlers "github.com/avGenie/url-shortener/internal/app/handlers/router"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"go.uber.org/zap"
 )
 
 func main() {
-	cnf := config.InitConfig()
+	config := config.InitConfig()
 
-	err := logger.Initialize(cnf)
+	err := logger.Initialize(config)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -21,25 +26,47 @@ func main() {
 	sugar := *zap.S()
 	defer sugar.Sync()
 
-	db, err := storage.InitStorage(cnf)
+	storage, err := storage.InitStorage(config)
 	if err != nil {
 		sugar.Fatalw(
 			err.Error(),
 			"event", "init storage",
 		)
 	}
-	defer db.Close()
+	defer storage.Close()
 
 	sugar.Infow(
 		"Starting server",
-		"addr", cnf.NetAddr,
+		"addr", config.NetAddr,
 	)
 
-	err = http.ListenAndServe(cnf.NetAddr, handlers.CreateRouter(cnf, db))
-	if err != nil && err != http.ErrServerClosed {
-		sugar.Fatalw(
-			err.Error(),
-			"event", "start server",
-		)
+	startHTTPServer(config, storage)
+}
+
+func startHTTPServer(config config.Config, storage model.Storage) {
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer cancel()
+
+	router := handlers.NewRouter(config, storage)
+
+	server := &http.Server{
+		Addr:    config.NetAddr,
+		Handler: router.Mux,
 	}
+
+	go func() {
+		err := http.ListenAndServe(config.NetAddr, router.Mux)
+		if err != nil && err != http.ErrServerClosed {
+			zap.L().Fatal("fatal error while starting server", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	
+	zap.L().Info("Got interruption signal. Shutting down HTTP server gracefully...")
+	err := server.Shutdown(context.Background())
+	if err != nil {
+		zap.L().Error("error while shutting down server", zap.Error(err))
+	}
+	router.Stop()
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/models"
 	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
@@ -24,7 +25,7 @@ func NewTSLocalStorage(size int) *TSLocalStorage {
 }
 
 // Returns an element from the map
-func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+func (s *TSLocalStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	res, ok := s.urls.Get(key)
 	s.mutex.RUnlock()
@@ -36,8 +37,24 @@ func (s *TSLocalStorage) GetURL(ctx context.Context, key entity.URL) (*entity.UR
 	return &res, nil
 }
 
+func (s *TSLocalStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
+	s.mutex.RLock()
+	urls := s.urls.GetAllURL()
+	s.mutex.RUnlock()
+
+	var allURLs models.AllUrlsBatch
+	for key, value := range urls {
+		allURLs = append(allURLs, models.AllUrlsResponse{
+			ShortURL:    key.String(),
+			OriginalURL: value.String(),
+		})
+	}
+
+	return allURLs, nil
+}
+
 // Adds the given value under the specified key
-func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
+func (s *TSLocalStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -52,7 +69,7 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, key, value entity.URL) err
 }
 
 // Adds elements from the given batch to the local storage
-func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	localUrls := NewLocalStorage(len(batch))
 	for _, obj := range batch {
 		key, err := entity.NewURL(obj.ShortURL)
