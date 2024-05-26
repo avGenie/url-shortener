@@ -67,18 +67,20 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 
 	<-ctx.Done()
 
-	fmem, err := os.Create(`result.pprof`)
-	if err != nil {
-		panic(err)
-	}
-	defer fmem.Close()
-	runtime.GC()
-	if err := pprof.WriteHeapProfile(fmem); err != nil {
-		panic(err)
+	if len(config.ProfilerFile) != 0 {
+		fmem, err := os.Create(config.ProfilerFile)
+		if err != nil {
+			panic(err)
+		}
+		defer fmem.Close()
+		runtime.GC()
+		if err := pprof.WriteHeapProfile(fmem); err != nil {
+			panic(err)
+		}
 	}
 
 	zap.L().Info("Got interruption signal. Shutting down HTTP server gracefully...")
-	err = server.Shutdown(context.Background())
+	err := server.Shutdown(context.Background())
 	if err != nil {
 		zap.L().Error("error while shutting down server", zap.Error(err))
 	}

@@ -29,16 +29,21 @@ func main() {
 
 	config.NetAddr = fmt.Sprintf("http://%s", config.NetAddr)
 
-	//postRequest(config)
-	//postShortenRequest(config)
-	//postShortenBatchRequest(config)
-
+	now := time.Now()
 	wg := &sync.WaitGroup{}
 	wg.Add(RoutineCount)
-	now := time.Now()
 	for i := 0; i < RoutineCount; i++ {
-		//wg.Add(1)
 		go testPostRequest(config, wg)
+	}
+
+	wg.Add(RoutineCount)
+	for i := 0; i < RoutineCount; i++ {
+		go testPostShortenRequest(config, wg)
+	}
+
+	wg.Add(RoutineCount)
+	for i := 0; i < RoutineCount; i++ {
+		go testPostShortenBatchRequest(config, wg)
 	}
 
 	wg.Wait()
@@ -50,12 +55,22 @@ func testPostRequest(config config.Config, wg *sync.WaitGroup) {
 	postRequest(config)
 }
 
+func testPostShortenRequest(config config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
+	postShortenRequest(config)
+}
+
+func testPostShortenBatchRequest(config config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
+	postShortenBatchRequest(config)
+}
+
 func postRequest(config config.Config) {
 	c := client.New(config.NetAddr)
 	var cookie *http.Cookie
 
 	for i := 0; i < MaxCount; i++ {
-		time.Sleep(random.SleepDuration(50, 100) * time.Millisecond)
+		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
 		res, err := c.SendPostRequest([]byte(random.GenerateRandomURL()), cookie)
 		if err != nil {
 			zap.L().Error("PostShortenRequest SendPostRequest", zap.Error(err))
@@ -76,6 +91,7 @@ func postShortenRequest(config config.Config) {
 	var cookie *http.Cookie
 
 	for i := 0; i < MaxCount; i++ {
+		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
 		request := models.Request{
 			URL: random.GenerateRandomURL(),
 		}
@@ -93,8 +109,6 @@ func postShortenRequest(config config.Config) {
 		}
 		defer res.Body.Close()
 
-		fmt.Println(res.StatusCode)
-
 		if cookie == nil {
 			cookies := res.Cookies()
 			cookie = cookies[0]
@@ -108,6 +122,7 @@ func postShortenBatchRequest(config config.Config) {
 	var cookie *http.Cookie
 
 	for i := 0; i < MaxCount; i++ {
+		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
 		data, err := createBatchData()
 		if err != nil {
 			zap.L().Error("PostShortenRequest marshall", zap.Error(err))
