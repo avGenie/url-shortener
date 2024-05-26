@@ -6,15 +6,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"time"
-
 	"github.com/avGenie/url-shortener/internal/app/entity"
 )
 
 const (
 	secretKey = "5269889d400bbf2dc66216f37b2839bb"
-	idLength  = 128
-	timeout   = 3 * time.Second
 )
 
 func EncodeUserID(userID entity.UserID) (string, error) {

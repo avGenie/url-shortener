@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/google/uuid"
+	"github.com/avGenie/url-shortener/internal/app/usecase/user"
 	"go.uber.org/zap"
 )
 
@@ -56,7 +56,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func processInvalidCookie(w http.ResponseWriter) *http.Cookie {
-	userID := createUserID()
+	userID := user.CreateUserID()
 
 	cookie := &http.Cookie{
 		Name:  entity.UserIDKey,
@@ -66,11 +66,4 @@ func processInvalidCookie(w http.ResponseWriter) *http.Cookie {
 	http.SetCookie(w, cookie)
 
 	return cookie
-}
-
-func createUserID() entity.UserID {
-	uuid := uuid.New()
-	userID := entity.UserID(uuid.String())
-
-	return userID
 }
