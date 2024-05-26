@@ -26,10 +26,10 @@ func TestDeleteHandler(t *testing.T) {
 		statusCode int
 	}
 	tests := []struct {
-		name              string
-		inputBody         string
-		userIDCtx         entity.UserIDCtx
-		want              want
+		name      string
+		inputBody string
+		userIDCtx entity.UserIDCtx
+		want      want
 	}{
 		{
 			name:      "correct input data",

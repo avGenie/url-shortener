@@ -3,6 +3,6 @@ package entity
 type DeletedURLBatch []DeletedURL
 
 type DeletedURL struct {
-	UserID string
+	UserID   string
 	ShortURL string
 }

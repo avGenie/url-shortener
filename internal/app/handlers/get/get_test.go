@@ -254,7 +254,7 @@ func TestGetUserURLHandler(t *testing.T) {
 			},
 		},
 		{
-			name:    "unathorized user",
+			name:          "unathorized user",
 			baseURIPrefix: baseURIPrefix,
 			userIDCtx: entity.UserIDCtx{
 				UserID:     "",
@@ -269,7 +269,7 @@ func TestGetUserURLHandler(t *testing.T) {
 			},
 		},
 		{
-			name:    "missing user id",
+			name:          "missing user id",
 			baseURIPrefix: baseURIPrefix,
 			userIDCtx: entity.UserIDCtx{
 				UserID:     "",

@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"testing"
+
 	"github.com/avGenie/url-shortener/internal/app/usecase/user"
 	"go.uber.org/zap"
-	"testing"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
 	"github.com/google/uuid"

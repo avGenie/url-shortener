@@ -19,7 +19,7 @@ func (s *LocalStorage) Get(key entity.URL) (entity.URL, bool) {
 	return res, ok
 }
 
-func (s *LocalStorage) GetAllURL() (map[entity.URL]entity.URL) {
+func (s *LocalStorage) GetAllURL() map[entity.URL]entity.URL {
 	return s.urls
 }
 

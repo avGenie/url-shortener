@@ -3,15 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/avGenie/url-shortener/cmd/client/client"
 	"github.com/avGenie/url-shortener/cmd/client/random"
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	"go.uber.org/zap"
-	"net/http"
-	"sync"
-	"time"
 )
 
 const (

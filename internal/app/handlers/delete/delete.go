@@ -132,17 +132,17 @@ func (h *DeleteHandler) flushDeletedURLs() {
 			zap.L().Info("shutting down server; last flushing")
 			flush()
 			return
-		case urls, ok := <- h.msgChan:
+		case urls, ok := <-h.msgChan:
 			if !ok {
 				return
 			}
 
-			if len(storageBatch) + len(urls) > flushBufLen {
+			if len(storageBatch)+len(urls) > flushBufLen {
 				flush()
 			}
 
 			storageBatch = append(storageBatch, urls...)
-		case <- ticker.C:
+		case <-ticker.C:
 			if len(storageBatch) == 0 {
 				continue
 			}
