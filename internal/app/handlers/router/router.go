@@ -10,6 +10,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Router struct {
@@ -36,6 +37,8 @@ func createRouter(config config.Config, deleteHandler *handlers.DeleteHandler, d
 	r.Use(logger.LoggerMiddleware)
 	r.Use(encoding.GzipMiddleware)
 	r.Use(auth.AuthMiddleware)
+
+	r.Mount("/debug", middleware.Profiler())
 
 	r.Post("/", post.URLHandler(db, config.BaseURIPrefix))
 	r.Post("/api/shorten", post.JSONHandler(db, config.BaseURIPrefix))
