@@ -91,10 +91,10 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID,
 	return batch, nil
 }
 
-func PingServer(ctx context.Context) error {
+func (s *TSLocalStorage) PingServer(ctx context.Context) error {
 	return nil
 }
 
-func Close() entity.Response {
-	return entity.OKResponse()
+func (s *TSLocalStorage) Close() {
+	return
 }

@@ -1,3 +1,4 @@
+// Package encoding provides middleware for decrypting/encrypting http content
 package encoding
 
 import (
@@ -27,6 +28,9 @@ func isEncodingContentType(content string) bool {
 	return false
 }
 
+// GzipMiddleware encodes/decodes http content using gzip encoding format
+//
+// Return 500(StatusInternalServerError) if encoding/decoding is not completed correctly
 func GzipMiddleware(h http.Handler) http.Handler {
 	gzipFn := func(writer http.ResponseWriter, req *http.Request) {
 		ow := writer

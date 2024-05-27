@@ -176,16 +176,14 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, ba
 	return batch, nil
 }
 
-func (s *FileStorage) Close() entity.Response {
+func (s *FileStorage) Close() {
 	s.file.Name()
 	if strings.Contains(s.fileName, os.TempDir()) {
 		err := os.Remove(s.fileName)
 		if err != nil {
-			return entity.ErrorResponse(err)
+			zap.L().Error("error while closing file storage", zap.Error(err))
 		}
 	}
-
-	return entity.OKResponse()
 }
 
 func (s *FileStorage) PingServer(ctx context.Context) error {

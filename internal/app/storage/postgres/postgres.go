@@ -49,14 +49,11 @@ func NewPostgresStorage(dbStorageConnect string) (*PostgresStorage, error) {
 	}, nil
 }
 
-func (s *PostgresStorage) Close() entity.Response {
+func (s *PostgresStorage) Close() {
 	err := s.db.Close()
 	if err != nil {
-		outErr := fmt.Errorf("couldn'r closed postgres db: %w", err)
-		return entity.ErrorResponse(outErr)
+		zap.L().Error("error while closing postgres storage", zap.Error(err))
 	}
-
-	return entity.OKResponse()
 }
 
 func (s *PostgresStorage) PingServer(ctx context.Context) error {

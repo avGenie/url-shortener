@@ -1,3 +1,4 @@
+// Package auth provides authenticate middleware and encodes and decodes user ID
 package auth
 
 import (
@@ -10,10 +11,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	ErrInvalidRawUserID = errors.New("invalid raw user id")
-)
-
+// AuthMiddleware authenticate middleware validates user ID obtained from cookies
+//
+// Returns 200(StatusOK) if validation was performed correctly
+// Returns 401(StatusUnauthorized) if cookie with user ID undefined
+// Returns 401(StatusUnauthorized) if user ID obtained from cookies is invalid
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		zap.L().Info("start user authentication")

@@ -5,12 +5,16 @@ import (
 	"net/url"
 )
 
+// URL Contains data related to url
 type URL struct {
 	Scheme string
 	Host   string
 	Path   string
 }
 
+// NewURL Creates URL based on input string
+//
+// Returns error due to parsing input string
 func NewURL(inputURL string) (*URL, error) {
 	u, err := url.Parse(inputURL)
 	if err != nil {
@@ -25,7 +29,7 @@ func NewURL(inputURL string) (*URL, error) {
 	return newURL, nil
 }
 
-// Parses URL
+// ParseURL Parses URL
 //
 // If URL couldn't be parsed, returns nil
 func ParseURL(inputURL string) (*URL, error) {
@@ -37,7 +41,7 @@ func ParseURL(inputURL string) (*URL, error) {
 	return u, nil
 }
 
-// Validates URL
+// IsValidURL Validates URL obtained from input string
 func IsValidURL(inputURL string) bool {
 	if len(inputURL) == 0 {
 		return false
@@ -51,6 +55,7 @@ func IsValidURL(inputURL string) bool {
 	return true
 }
 
+// String Implements stringer interface
 func (u URL) String() string {
 	s, err := url.JoinPath(u.Host, u.Path)
 	if err != nil {
