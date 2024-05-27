@@ -2,6 +2,7 @@ package errors
 
 import "errors"
 
+// Handler processing errors
 var (
 	WrongURLFormat    = "wrong URL format"
 	WrongJSONFormat   = "wrong JSON format"

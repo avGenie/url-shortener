@@ -13,11 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Processes POST request by JSON within http://localhost:8080/api/shorten URL format.
+// JSONHandler Processes POST "/api/shorten" endpoint. Save original and short URLs to storage
 //
-// Encodes given URL using base64 encoding scheme and puts it to the URL's map.
-//
-// Returns 201 status code if processing was successfull, otherwise returns 400.
+// Returns 201(StatusCreated) if processing was successfully
+// Returns 500(StatusInternalServerError) if base URI prefix is invalid
+// Returns 500(StatusInternalServerError) if user ID is invalid
+// Returns 500(StatusInternalServerError) when database error
+// Returns 400(StatusBadRequest) if original URL is invalid
+// Returns 409(StatusConflict) if original URL exists in storage for this user
 func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		zap.L().Debug("POST handler JSON processing")
@@ -82,6 +85,13 @@ func JSONHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 	}
 }
 
+// JSONBatchHandler Processes POST "/api/shorten/batch" endpoint. Save original and short URLs to storage
+//
+// Returns 201(StatusCreated) if processing was successfully
+// Returns 500(StatusInternalServerError) if base URI prefix is invalid
+// Returns 500(StatusInternalServerError) if user ID is invalid
+// Returns 500(StatusInternalServerError) when database error
+// Returns 400(StatusBadRequest) if input URLs is invalid
 func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		zap.L().Debug("POST JSON batch handler processing")

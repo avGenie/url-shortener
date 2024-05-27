@@ -13,12 +13,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+// Router Routes endpoint handlers
 type Router struct {
 	Mux *chi.Mux
 
 	deleteHandler *handlers.DeleteHandler
 }
 
+// NewRouter Creates router
 func NewRouter(config config.Config, db storage.Storage) *Router {
 	deleteHandler := handlers.NewDeleteHandler(db)
 	return &Router{
@@ -27,6 +29,7 @@ func NewRouter(config config.Config, db storage.Storage) *Router {
 	}
 }
 
+// Stop Stops router
 func (r *Router) Stop() {
 	r.deleteHandler.Stop()
 }

@@ -1,3 +1,4 @@
+// Package logger provides logger middleware
 package logger
 
 import (
@@ -8,6 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Initialize Initializes zap logger
 func Initialize(config config.Config) error {
 	lvl, err := zap.ParseAtomicLevel(config.LogLevel)
 	if err != nil {
@@ -27,6 +29,7 @@ func Initialize(config config.Config) error {
 	return nil
 }
 
+// LoggerMiddleware logs incoming HTTP request information: URI, method, status, size
 func LoggerMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

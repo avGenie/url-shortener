@@ -18,7 +18,7 @@ type Config struct {
 func InitConfig() (config Config) {
 	flag.StringVar(&config.NetAddr, "a", "localhost:8080", "net address host:port")
 	flag.StringVar(&config.BaseURIPrefix, "b", "http://localhost:8080", "base output short URL")
-	flag.StringVar(&config.LogLevel, "l", "info", "log level")
+	flag.StringVar(&config.LogLevel, "l", "debug", "log level")
 	flag.StringVar(&config.DBFileStoragePath, "f", "/tmp/short-url-db.json", "database storage path")
 	flag.StringVar(&config.DBStorageConnect, "d", "", "database credentials in format: host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable")
 	flag.StringVar(&config.ProfilerFile, "p", "", "profiler file name")

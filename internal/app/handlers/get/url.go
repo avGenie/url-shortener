@@ -21,11 +21,12 @@ type AllURLGetter interface {
 	GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error)
 }
 
-// Processes GET request. Sends the source address at the given short address
+// URLHandler Processes GET "/" endpoint. Sends the source address at the given short address
 //
-// # Sends short URL back to the original using from the URL's map
-//
-// Returns 307 status code if processing was successfull, otherwise returns 400.
+// Returns 307(StatusTemporaryRedirect) if processing was successful
+// Returns 500(StatusInternalServerError) when URL parsing fails
+// Returns 410(StatusGone) if requested URL has been deleted
+// Returns 400(StatusBadRequest) if requested URL is not found
 func URLHandler(getter URLGetter) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		shortURL := chi.URLParam(req, "url")
@@ -79,6 +80,14 @@ func URLHandler(getter URLGetter) http.HandlerFunc {
 	}
 }
 
+// UserURLsHandler Processes GET "/api/user/urls" endpoint. Sends all user URLs
+//
+// Returns 200(StatusOK) if processing was successful
+// Returns 500(StatusInternalServerError) if base URI prefix is invalid
+// Returns 500(StatusInternalServerError) if user ID is invalid
+// Returns 500(StatusInternalServerError) when database error
+// Returns 401(StatusUnauthorized) if requested URL has been deleted
+// Returns 204(StatusNoContent) if URLs for user is not found
 func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		if baseURIPrefix == "" {
