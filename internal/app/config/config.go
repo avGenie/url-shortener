@@ -1,3 +1,4 @@
+// Package config implements application config
 package config
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/caarlos0/env/v10"
 )
 
+// Config struct
 type Config struct {
 	NetAddr           string `env:"SERVER_ADDRESS"`
 	BaseURIPrefix     string `env:"BASE_URL"`
@@ -15,6 +17,7 @@ type Config struct {
 	ProfilerFile      string `env:"PROFILER_FILE"`
 }
 
+// InitConfig Initialize config from flag and env variables
 func InitConfig() (config Config) {
 	flag.StringVar(&config.NetAddr, "a", "localhost:8080", "net address host:port")
 	flag.StringVar(&config.BaseURIPrefix, "b", "http://localhost:8080", "base output short URL")

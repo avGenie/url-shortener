@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	MaxCount     = 1000
-	BatchCount   = 3
-	RoutineCount = 10
+	maxCount     = 1000
+	batchCount   = 3
+	routineCount = 10
 )
 
 func main() {
@@ -32,18 +32,18 @@ func main() {
 
 	now := time.Now()
 	wg := &sync.WaitGroup{}
-	wg.Add(RoutineCount)
-	for i := 0; i < RoutineCount; i++ {
+	wg.Add(routineCount)
+	for i := 0; i < routineCount; i++ {
 		go testPostRequest(config, wg)
 	}
 
-	wg.Add(RoutineCount)
-	for i := 0; i < RoutineCount; i++ {
+	wg.Add(routineCount)
+	for i := 0; i < routineCount; i++ {
 		go testPostShortenRequest(config, wg)
 	}
 
-	wg.Add(RoutineCount)
-	for i := 0; i < RoutineCount; i++ {
+	wg.Add(routineCount)
+	for i := 0; i < routineCount; i++ {
 		go testPostShortenBatchRequest(config, wg)
 	}
 
@@ -70,7 +70,7 @@ func postRequest(config config.Config) {
 	c := client.New(config.NetAddr)
 	var cookie *http.Cookie
 
-	for i := 0; i < MaxCount; i++ {
+	for i := 0; i < maxCount; i++ {
 		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
 		res, err := c.SendPostRequest([]byte(random.GenerateRandomURL()), cookie)
 		if err != nil {
@@ -91,7 +91,7 @@ func postShortenRequest(config config.Config) {
 	c := client.New(netAddr)
 	var cookie *http.Cookie
 
-	for i := 0; i < MaxCount; i++ {
+	for i := 0; i < maxCount; i++ {
 		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
 		request := models.Request{
 			URL: random.GenerateRandomURL(),
@@ -122,7 +122,7 @@ func postShortenBatchRequest(config config.Config) {
 	c := client.New(netAddr)
 	var cookie *http.Cookie
 
-	for i := 0; i < MaxCount; i++ {
+	for i := 0; i < maxCount; i++ {
 		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
 		data, err := createBatchData()
 		if err != nil {
@@ -145,8 +145,8 @@ func postShortenBatchRequest(config config.Config) {
 }
 
 func createBatchData() ([]byte, error) {
-	batch := make(models.ReqBatch, 0, BatchCount)
-	for i := 0; i < BatchCount; i++ {
+	batch := make(models.ReqBatch, 0, batchCount)
+	for i := 0; i < batchCount; i++ {
 		randomString := random.GenerateRandomString()
 		url := random.GenerateURL(randomString)
 		batch = append(batch, models.BatchObjectRequest{

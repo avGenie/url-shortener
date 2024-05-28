@@ -17,19 +17,19 @@ const (
 )
 
 var (
-	ErrInternal       = errors.New("getting internal error while getting all user urls")
-	ErrAllURLNotFound = errors.New("urls for this user not found")
+	errInternal       = errors.New("getting internal error while getting all user urls")
+	errAllURLNotFound = errors.New("urls for this user not found")
 )
 
 func processAllUSerURL(getter AllURLGetter, ctx context.Context, userID entity.UserID, baseURIPrefix string) ([]byte, error) {
 	urls, err := getter.GetAllURLByUserID(ctx, userID)
 	if err != nil {
 		zap.L().Error("couldn't get all user urls", zap.Error(err), zap.String("user_id", userID.String()))
-		return nil, ErrInternal
+		return nil, errInternal
 	}
 
 	if len(urls) == 0 {
-		return nil, ErrAllURLNotFound
+		return nil, errAllURLNotFound
 	}
 
 	for index, url := range urls {
@@ -40,7 +40,7 @@ func processAllUSerURL(getter AllURLGetter, ctx context.Context, userID entity.U
 	out, err := json.Marshal(urls)
 	if err != nil {
 		zap.L().Error("error while converting all user urls to output", zap.Error(err))
-		return nil, ErrInternal
+		return nil, errInternal
 	}
 
 	return out, nil

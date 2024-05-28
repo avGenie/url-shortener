@@ -1,3 +1,4 @@
+// Package client implements client for shortener
 package client
 
 import (
@@ -7,11 +8,13 @@ import (
 	"net/http"
 )
 
+// Client Contains information for sending request to client
 type Client struct {
 	Client   *http.Client
 	postAddr string
 }
 
+// New Creates client object
 func New(postAddr string) *Client {
 	return &Client{
 		Client: &http.Client{
@@ -23,6 +26,7 @@ func New(postAddr string) *Client {
 	}
 }
 
+// SendPostRequest Sends POST request
 func (c *Client) SendPostRequest(data []byte, cookie *http.Cookie) (*http.Response, error) {
 	request, err := http.NewRequest(http.MethodPost, c.postAddr, bytes.NewReader(data))
 	if err != nil {
@@ -40,6 +44,7 @@ func (c *Client) SendPostRequest(data []byte, cookie *http.Cookie) (*http.Respon
 	return response, nil
 }
 
+// SendGetRequest Sends GET request
 func (c *Client) SendGetRequest(netAddr, baseURIPrefix string) (*http.Response, error) {
 	requestURL := fmt.Sprintf("%s/%s", baseURIPrefix, netAddr)
 	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
@@ -56,6 +61,7 @@ func (c *Client) SendGetRequest(netAddr, baseURIPrefix string) (*http.Response, 
 	return response, nil
 }
 
+// ReadBody Reads response body
 func (c *Client) ReadBody(response *http.Response) ([]byte, error) {
 	bodyBytes, err := io.ReadAll(response.Body)
 	defer response.Body.Close()

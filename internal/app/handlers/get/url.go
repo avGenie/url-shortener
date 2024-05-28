@@ -13,10 +13,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// URLGetter Interface to get URL from storage
 type URLGetter interface {
 	GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error)
 }
 
+// AllURLGetter Interface to get all URLs from storage
 type AllURLGetter interface {
 	GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error)
 }
@@ -113,7 +115,7 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 
 		out, err := processAllUSerURL(getter, ctx, userIDCtx.UserID, baseURIPrefix)
 		if err != nil {
-			if errors.Is(err, ErrAllURLNotFound) {
+			if errors.Is(err, errAllURLNotFound) {
 				writer.WriteHeader(http.StatusNoContent)
 				return
 			}

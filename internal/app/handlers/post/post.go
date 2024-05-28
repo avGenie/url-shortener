@@ -23,10 +23,12 @@ const (
 	timeout        = 3 * time.Second
 )
 
+// URLSaver Interface to save URL to storage
 type URLSaver interface {
 	SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error
 }
 
+// URLBatchSaver Interface to save batch URLs to storage
 type URLBatchSaver interface {
 	SaveBatchURL(ctx context.Context, userID entity.UserID, batch storage.Batch) (storage.Batch, error)
 }
