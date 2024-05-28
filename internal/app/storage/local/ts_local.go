@@ -1,3 +1,4 @@
+// Package local contains implementation of local storage
 package local
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
 
+// TSLocalStorage Thread save local storage object
 type TSLocalStorage struct {
 	model.Storage
 
@@ -18,13 +20,14 @@ type TSLocalStorage struct {
 	urls  LocalStorage
 }
 
+// NewTSLocalStorage Creates thread save local storage object
 func NewTSLocalStorage(size int) *TSLocalStorage {
 	return &TSLocalStorage{
 		urls: *NewLocalStorage(size),
 	}
 }
 
-// Returns an element from the map
+// GetURL Returns URL user from local storage
 func (s *TSLocalStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	res, ok := s.urls.Get(key)
@@ -37,6 +40,7 @@ func (s *TSLocalStorage) GetURL(ctx context.Context, userID entity.UserID, key e
 	return &res, nil
 }
 
+// GetAllURLByUserID Returns all user URLs from local storage
 func (s *TSLocalStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
 	s.mutex.RLock()
 	urls := s.urls.GetAllURL()
@@ -53,7 +57,7 @@ func (s *TSLocalStorage) GetAllURLByUserID(ctx context.Context, userID entity.Us
 	return allURLs, nil
 }
 
-// Adds the given value under the specified key
+// SaveURL Saves user URL to local storage
 func (s *TSLocalStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -68,7 +72,7 @@ func (s *TSLocalStorage) SaveURL(ctx context.Context, userID entity.UserID, key,
 	return nil
 }
 
-// Adds elements from the given batch to the local storage
+// SaveBatchURL Saves batch of user URLs to local storage
 func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	localUrls := NewLocalStorage(len(batch))
 	for _, obj := range batch {
@@ -91,10 +95,12 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID,
 	return batch, nil
 }
 
+// PingServer Pings to local storage
 func (s *TSLocalStorage) PingServer(ctx context.Context) error {
 	return nil
 }
 
+// Close Closes connection to local storage
 func (s *TSLocalStorage) Close() {
 	return
 }

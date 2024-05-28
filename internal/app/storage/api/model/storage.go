@@ -1,3 +1,4 @@
+// Package model provides storage interface
 package model
 
 import (
@@ -7,8 +8,9 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/models"
 )
 
+// Storage Interface for implementation storage object
 type Storage interface {
-	Close() entity.Response
+	Close()
 	PingServer(ctx context.Context) error
 
 	SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error
