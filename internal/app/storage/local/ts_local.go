@@ -102,5 +102,4 @@ func (s *TSLocalStorage) PingServer(ctx context.Context) error {
 
 // Close Closes connection to local storage
 func (s *TSLocalStorage) Close() {
-	return
 }
