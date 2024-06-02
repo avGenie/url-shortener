@@ -7,12 +7,13 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/avGenie/url-shortener/cmd/client/client"
 	"github.com/avGenie/url-shortener/cmd/client/random"
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/models"
-	"go.uber.org/zap"
 )
 
 const (
@@ -22,10 +23,13 @@ const (
 )
 
 func main() {
-	config := config.InitConfig()
-	err := logger.Initialize(config)
+	config, err := config.InitConfig()
 	if err != nil {
-		panic(err.Error())
+		zap.L().Fatal("Failed to initialize config", zap.Error(err))
+	}
+	err = logger.Initialize(config)
+	if err != nil {
+		zap.L().Fatal("Failed to initialize logger", zap.Error(err))
 	}
 
 	config.NetAddr = fmt.Sprintf("http://%s", config.NetAddr)
@@ -67,7 +71,7 @@ func testPostShortenBatchRequest(config config.Config, wg *sync.WaitGroup) {
 }
 
 func postRequest(config config.Config) {
-	c := client.New(config.NetAddr)
+	c := client.NewClient(config.NetAddr)
 	var cookie *http.Cookie
 
 	for i := 0; i < maxCount; i++ {
@@ -88,7 +92,7 @@ func postRequest(config config.Config) {
 
 func postShortenRequest(config config.Config) {
 	netAddr := fmt.Sprintf("%s/api/shorten", config.NetAddr)
-	c := client.New(netAddr)
+	c := client.NewClient(netAddr)
 	var cookie *http.Cookie
 
 	for i := 0; i < maxCount; i++ {
@@ -119,7 +123,7 @@ func postShortenRequest(config config.Config) {
 
 func postShortenBatchRequest(config config.Config) {
 	netAddr := fmt.Sprintf("%s/api/shorten/batch", config.NetAddr)
-	c := client.New(netAddr)
+	c := client.NewClient(netAddr)
 	var cookie *http.Cookie
 
 	for i := 0; i < maxCount; i++ {

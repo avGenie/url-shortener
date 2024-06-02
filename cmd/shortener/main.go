@@ -3,28 +3,31 @@ package main
 import (
 	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
 	"syscall"
 
-	_ "net/http/pprof"
+	"go.uber.org/zap"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	handlers "github.com/avGenie/url-shortener/internal/app/handlers/router"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
-	"go.uber.org/zap"
 )
 
 func main() {
-	config := config.InitConfig()
-
-	err := logger.Initialize(config)
+	config, err := config.InitConfig()
 	if err != nil {
-		panic(err.Error())
+		zap.L().Fatal("Failed to initialize config", zap.Error(err))
+	}
+
+	err = logger.Initialize(config)
+	if err != nil {
+		zap.L().Fatal("Failed to initialize logger", zap.Error(err))
 	}
 
 	sugar := *zap.S()

@@ -12,14 +12,15 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/entity"
 
-	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
-	"github.com/avGenie/url-shortener/internal/app/handlers/get/mock"
-	"github.com/avGenie/url-shortener/internal/app/logger"
-	"github.com/avGenie/url-shortener/internal/app/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/avGenie/url-shortener/internal/app/handlers/errors"
+	"github.com/avGenie/url-shortener/internal/app/handlers/get/mock"
+	"github.com/avGenie/url-shortener/internal/app/logger"
+	"github.com/avGenie/url-shortener/internal/app/models"
 )
 
 const (
@@ -320,7 +321,7 @@ func TestGetUserURLHandler(t *testing.T) {
 }
 
 func TestGetPingDBHandler(t *testing.T) {
-	cnf := config.InitConfig()
+	cnf, _ := config.InitConfig()
 
 	logger.Initialize(cnf)
 

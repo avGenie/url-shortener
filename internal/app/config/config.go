@@ -18,7 +18,8 @@ type Config struct {
 }
 
 // InitConfig Initialize config from flag and env variables
-func InitConfig() (config Config) {
+func InitConfig() (Config, error) {
+	var config Config
 	flag.StringVar(&config.NetAddr, "a", "localhost:8080", "net address host:port")
 	flag.StringVar(&config.BaseURIPrefix, "b", "http://localhost:8080", "base output short URL")
 	flag.StringVar(&config.LogLevel, "l", "debug", "log level")
@@ -28,8 +29,8 @@ func InitConfig() (config Config) {
 	flag.Parse()
 
 	if err := env.Parse(&config); err != nil {
-		panic(err.Error())
+		return Config{}, err
 	}
 
-	return
+	return config, nil
 }

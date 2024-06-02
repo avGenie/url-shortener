@@ -14,8 +14,8 @@ type Client struct {
 	postAddr string
 }
 
-// New Creates client object
-func New(postAddr string) *Client {
+// NewClient Creates client object
+func NewClient(postAddr string) *Client {
 	return &Client{
 		Client: &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
