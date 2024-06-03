@@ -1,8 +1,8 @@
-// Package analysis uses all standard analysers for analysis
+// Package analysis works with standard analysers from go/analysis
 package analysis
 
 import (
-	"golang.org/x/tools/go/analysis/multichecker"
+	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/appends"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
 	"golang.org/x/tools/go/analysis/passes/assign"
@@ -52,11 +52,11 @@ import (
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
 )
 
-// Analyse Analyses source code using all standard analysers
+// GetAnalyzers Returns all standard analyzers
 //
-// List of analysers: https://pkg.go.dev/golang.org/x/tools/go/analysis/passes
-func Analyse() {
-	multichecker.Main(
+// List of analyzers: https://pkg.go.dev/golang.org/x/tools/go/analysis/passes
+func GetAnalyzers() []*analysis.Analyzer {
+	return []*analysis.Analyzer{
 		appends.Analyzer,
 		asmdecl.Analyzer,
 		assign.Analyzer,
@@ -104,5 +104,5 @@ func Analyse() {
 		unusedresult.Analyzer,
 		unusedwrite.Analyzer,
 		usesgenerics.Analyzer,
-	)
+	}
 }
