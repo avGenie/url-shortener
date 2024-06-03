@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	entity "github.com/avGenie/url-shortener/internal/app/entity"
+	models "github.com/avGenie/url-shortener/internal/app/models"
 	model "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -37,11 +38,9 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // Close mocks base method.
-func (m *MockStorage) Close() entity.Response {
+func (m *MockStorage) Close() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(entity.Response)
-	return ret0
+	m.ctrl.Call(m, "Close")
 }
 
 // Close indicates an expected call of Close.
@@ -50,19 +49,48 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorage)(nil).Close))
 }
 
-// GetURL mocks base method.
-func (m *MockStorage) GetURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
+// DeleteBatchURL mocks base method.
+func (m *MockStorage) DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURL", ctx, key)
+	ret := m.ctrl.Call(m, "DeleteBatchURL", ctx, urls)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteBatchURL indicates an expected call of DeleteBatchURL.
+func (mr *MockStorageMockRecorder) DeleteBatchURL(ctx, urls interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBatchURL", reflect.TypeOf((*MockStorage)(nil).DeleteBatchURL), ctx, urls)
+}
+
+// GetAllURLByUserID mocks base method.
+func (m *MockStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllURLByUserID", ctx, userID)
+	ret0, _ := ret[0].(models.AllUrlsBatch)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllURLByUserID indicates an expected call of GetAllURLByUserID.
+func (mr *MockStorageMockRecorder) GetAllURLByUserID(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllURLByUserID", reflect.TypeOf((*MockStorage)(nil).GetAllURLByUserID), ctx, userID)
+}
+
+// GetURL mocks base method.
+func (m *MockStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetURL", ctx, userID, key)
 	ret0, _ := ret[0].(*entity.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetURL indicates an expected call of GetURL.
-func (mr *MockStorageMockRecorder) GetURL(ctx, key interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) GetURL(ctx, userID, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockStorage)(nil).GetURL), ctx, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockStorage)(nil).GetURL), ctx, userID, key)
 }
 
 // PingServer mocks base method.
@@ -80,30 +108,30 @@ func (mr *MockStorageMockRecorder) PingServer(ctx interface{}) *gomock.Call {
 }
 
 // SaveBatchURL mocks base method.
-func (m *MockStorage) SaveBatchURL(ctx context.Context, batch model.Batch) (model.Batch, error) {
+func (m *MockStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveBatchURL", ctx, batch)
+	ret := m.ctrl.Call(m, "SaveBatchURL", ctx, userID, batch)
 	ret0, _ := ret[0].(model.Batch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveBatchURL indicates an expected call of SaveBatchURL.
-func (mr *MockStorageMockRecorder) SaveBatchURL(ctx, batch interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) SaveBatchURL(ctx, userID, batch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchURL", reflect.TypeOf((*MockStorage)(nil).SaveBatchURL), ctx, batch)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatchURL", reflect.TypeOf((*MockStorage)(nil).SaveBatchURL), ctx, userID, batch)
 }
 
 // SaveURL mocks base method.
-func (m *MockStorage) SaveURL(ctx context.Context, key, value entity.URL) error {
+func (m *MockStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveURL", ctx, key, value)
+	ret := m.ctrl.Call(m, "SaveURL", ctx, userID, key, value)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveURL indicates an expected call of SaveURL.
-func (mr *MockStorageMockRecorder) SaveURL(ctx, key, value interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) SaveURL(ctx, userID, key, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockStorage)(nil).SaveURL), ctx, key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockStorage)(nil).SaveURL), ctx, userID, key, value)
 }

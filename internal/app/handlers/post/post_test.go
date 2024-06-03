@@ -437,7 +437,7 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 				UserID:     "ac2a4811-4f10-487f-bde3-e39a14af7cd8",
 				StatusCode: http.StatusOK,
 			},
-			isSaveURL:     true,
+			isSaveURL: true,
 
 			want: want{
 				statusCode:    201,

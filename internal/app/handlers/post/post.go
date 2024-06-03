@@ -23,10 +23,12 @@ const (
 	timeout        = 3 * time.Second
 )
 
+// URLSaver Interface to save URL to storage
 type URLSaver interface {
 	SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error
 }
 
+// URLBatchSaver Interface to save batch URLs to storage
 type URLBatchSaver interface {
 	SaveBatchURL(ctx context.Context, userID entity.UserID, batch storage.Batch) (storage.Batch, error)
 }
@@ -92,7 +94,7 @@ func createStorageBatch(urls models.ReqURLBatch) (storage.Batch, error) {
 }
 
 func batchURLProcessing(saver URLBatchSaver, ctx context.Context, userID entity.UserID,
-						batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
+	batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
 	urls, err := converter.ConvertBatchReqToURL(batch)
 	if err != nil {
 		zap.L().Error(post_err.CannotProcessURL, zap.Error(err))

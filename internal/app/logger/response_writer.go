@@ -16,6 +16,7 @@ type (
 	}
 )
 
+// Write Implements ResponseWriter interface
 func (w *logResponseWriter) Write(b []byte) (int, error) {
 	size, err := w.ResponseWriter.Write(b)
 	w.responseData.size += size
@@ -23,6 +24,7 @@ func (w *logResponseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
+// WriteHeader Implements ResponseWriter interface
 func (w *logResponseWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 	w.responseData.statusCode = statusCode

@@ -22,10 +22,12 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
+// Read Implements reader interface
 func (c *compressReader) Read(p []byte) (int, error) {
 	return c.gzReader.Read(p)
 }
 
+// Close Implements closer interface
 func (c *compressReader) Close() error {
 	if err := c.reader.Close(); err != nil {
 		return err

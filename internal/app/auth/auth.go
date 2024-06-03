@@ -1,3 +1,4 @@
+// Package auth provides authenticate middleware and encodes and decodes user ID
 package auth
 
 import (
@@ -5,18 +6,20 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
 )
 
 const (
 	secretKey = "5269889d400bbf2dc66216f37b2839bb"
-	idLength  = 128
-	timeout   = 3 * time.Second
 )
 
+// ErrInvalidRawUserID Error that will be returned if the user id is invalid
+var ErrInvalidRawUserID = errors.New("invalid raw user id")
+
+// EncodeUserID Encodes user ID using Galois/Counter Mode algorithm
 func EncodeUserID(userID entity.UserID) (string, error) {
 	rawData := userID.String()
 
@@ -46,6 +49,7 @@ func EncodeUserID(userID entity.UserID) (string, error) {
 	return string(ciphertext), nil
 }
 
+// DecodeUserID Decodes user ID encrypted with Galois/Counter Mode algorithm
 func DecodeUserID(data string) (entity.UserID, error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("error while decoding user id: %w", ErrInvalidRawUserID)

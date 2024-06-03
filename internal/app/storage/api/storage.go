@@ -1,3 +1,4 @@
+// Package api provides storage API
 package api
 
 import (
@@ -9,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// InitStorage Creates storage object
 func InitStorage(config config.Config) (model.Storage, error) {
 	var db model.Storage
 	var err error

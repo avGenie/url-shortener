@@ -12,11 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Processes POST request by URL within http://localhost:8080/id URL format.
+// URLHandler Processes POST "/id" endpoint. Save original and short URLs to storage
 //
-// Encodes given URL using base64 encoding scheme and puts it to the URL's map.
-//
-// Returns 201 status code if processing was successfull, otherwise returns 400.
+// Returns 201(StatusCreated) if processing was successfully
+// Returns 500(StatusInternalServerError) if base URI prefix is invalid
+// Returns 500(StatusInternalServerError) if user ID is invalid
+// Returns 500(StatusInternalServerError) when database error
+// Returns 400(StatusBadRequest) if original URL is invalid
+// Returns 409(StatusConflict) if original URL exists in storage for this user
 func URLHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		zap.L().Debug("POST handler URL processing")
@@ -70,7 +73,7 @@ func URLHandler(saver URLSaver, baseURIPrefix string) http.HandlerFunc {
 			return
 		}
 
-		zap.L().Info("url has been created succeessfully", zap.String("output url", outputURL))
+		zap.L().Info("url has been created successfully", zap.String("output url", outputURL))
 
 		successRawResponse(writer, outputURL, http.StatusCreated)
 	}

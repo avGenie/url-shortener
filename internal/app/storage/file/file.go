@@ -1,3 +1,4 @@
+// Package file contains implementation of file storage
 package file
 
 import (
@@ -17,6 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// FileStorage File storage object
 type FileStorage struct {
 	model.Storage
 
@@ -32,7 +34,7 @@ type FileStorage struct {
 	IsTemp bool
 }
 
-// Creates a new concurrent map
+// NewFileStorage Creates a new file storage object
 func NewFileStorage(fileName string) (*FileStorage, error) {
 	if fileName == "" {
 		zap.L().Info("storage was created successfully without keeping URL on disk")
@@ -66,7 +68,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	return storage, nil
 }
 
-// Returns an element from the map
+// GetURL Returns user URL from file storage
 func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	s.mutex.RLock()
 	if s.file == nil {
@@ -82,6 +84,7 @@ func (s *FileStorage) GetURL(ctx context.Context, userID entity.UserID, key enti
 	return &res, nil
 }
 
+// GetAllURLByUserID Returns all user URL from file storage
 func (s *FileStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
 	s.mutex.RLock()
 	if s.file == nil {
@@ -101,9 +104,7 @@ func (s *FileStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserI
 	return allURLs, nil
 }
 
-// Adds the given value under the specified key
-//
-// Returns `true` if element has been added to the storage.
+// SaveURL Saves user URL to file storage
 func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -131,7 +132,7 @@ func (s *FileStorage) SaveURL(ctx context.Context, userID entity.UserID, key, va
 	return nil
 }
 
-// Adds elements from the given batch to the file storage
+// SaveBatchURL Saves batch of user URLs to file storage
 func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -176,18 +177,18 @@ func (s *FileStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, ba
 	return batch, nil
 }
 
-func (s *FileStorage) Close() entity.Response {
+// Close Closes connection to file storage
+func (s *FileStorage) Close() {
 	s.file.Name()
 	if strings.Contains(s.fileName, os.TempDir()) {
 		err := os.Remove(s.fileName)
 		if err != nil {
-			return entity.ErrorResponse(err)
+			zap.L().Error("error while closing file storage", zap.Error(err))
 		}
 	}
-
-	return entity.OKResponse()
 }
 
+// PingServer Pings to file storage
 func (s *FileStorage) PingServer(ctx context.Context) error {
 	if s.file == nil {
 		return fmt.Errorf("error while ping file storage: %w", api.ErrFileStorageNotOpen)

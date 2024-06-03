@@ -8,10 +8,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// StoragePinger Interface to ping storage
 type StoragePinger interface {
 	PingServer(ctx context.Context) error
 }
 
+// PingDBHandler Processes GET "/ping" endpoint. Sends ping to storage
+//
+// Returns 200(StatusOK) if processing was successful
+// Returns 500(StatusInternalServerError) if the database could not be accessed
 func PingDBHandler(pinger StoragePinger) http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)

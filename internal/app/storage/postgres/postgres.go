@@ -1,3 +1,4 @@
+// Package postgres contains implementation of postgres storage
 package postgres
 
 import (
@@ -27,12 +28,14 @@ const (
 //go:embed migrations/*.sql
 var migrationFs embed.FS
 
+// PostgresStorage Postgres storage object
 type PostgresStorage struct {
 	model.Storage
 
 	db *sql.DB
 }
 
+// NewPostgresStorage Creates postgres storage object
 func NewPostgresStorage(dbStorageConnect string) (*PostgresStorage, error) {
 	db, err := sql.Open("pgx", dbStorageConnect)
 	if err != nil {
@@ -49,16 +52,15 @@ func NewPostgresStorage(dbStorageConnect string) (*PostgresStorage, error) {
 	}, nil
 }
 
-func (s *PostgresStorage) Close() entity.Response {
+// Close Closes connection to postgres DB
+func (s *PostgresStorage) Close() {
 	err := s.db.Close()
 	if err != nil {
-		outErr := fmt.Errorf("couldn'r closed postgres db: %w", err)
-		return entity.ErrorResponse(outErr)
+		zap.L().Error("error while closing postgres storage", zap.Error(err))
 	}
-
-	return entity.OKResponse()
 }
 
+// PingServer Pings to postgres DB server
 func (s *PostgresStorage) PingServer(ctx context.Context) error {
 	err := s.db.PingContext(ctx)
 	if err != nil {
@@ -68,6 +70,7 @@ func (s *PostgresStorage) PingServer(ctx context.Context) error {
 	return nil
 }
 
+// SaveURL Saves user URL to postgres DB
 func (s *PostgresStorage) SaveURL(ctx context.Context, userID entity.UserID, key, value entity.URL) error {
 	query := `INSERT INTO url(short_url, url, user_id) VALUES(@shortUrl, @url, @userID)`
 	args := pgx.NamedArgs{
@@ -89,6 +92,7 @@ func (s *PostgresStorage) SaveURL(ctx context.Context, userID entity.UserID, key
 	return nil
 }
 
+// SaveBatchURL Saves batch of user URLs to postgres DB
 func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID, batch model.Batch) (model.Batch, error) {
 	query := `INSERT INTO url(short_url, url, user_id) VALUES($1, $2, $3)`
 	tx, err := s.db.Begin()
@@ -114,6 +118,7 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID
 	return batch, nil
 }
 
+// GetURL Returns URL user from postgres DB
 func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	if !userID.IsValid() {
 		return s.getURL(ctx, key)
@@ -122,6 +127,7 @@ func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key 
 	return s.getUserURL(ctx, userID, key)
 }
 
+// GetAllURLByUserID Returns all user URLs from postgres DB
 func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -184,6 +190,7 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 	return urlsBatch, nil
 }
 
+// DeleteBatchURL Delete user URL from postgres DB
 func (s *PostgresStorage) DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

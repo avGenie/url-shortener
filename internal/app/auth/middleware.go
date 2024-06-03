@@ -1,3 +1,4 @@
+// Package auth provides authenticate middleware and encodes and decodes user ID
 package auth
 
 import (
@@ -6,14 +7,15 @@ import (
 	"net/http"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/google/uuid"
+	"github.com/avGenie/url-shortener/internal/app/usecase/user"
 	"go.uber.org/zap"
 )
 
-var (
-	ErrInvalidRawUserID = errors.New("invalid raw user id")
-)
-
+// AuthMiddleware authenticate middleware validates user ID obtained from cookies
+//
+// Returns 200(StatusOK) if validation was performed correctly
+// Returns 401(StatusUnauthorized) if cookie with user ID undefined
+// Returns 401(StatusUnauthorized) if user ID obtained from cookies is invalid
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		zap.L().Info("start user authentication")
@@ -56,7 +58,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func processInvalidCookie(w http.ResponseWriter) *http.Cookie {
-	userID := createUserID()
+	userID := user.CreateUserID()
 
 	cookie := &http.Cookie{
 		Name:  entity.UserIDKey,
@@ -66,11 +68,4 @@ func processInvalidCookie(w http.ResponseWriter) *http.Cookie {
 	http.SetCookie(w, cookie)
 
 	return cookie
-}
-
-func createUserID() entity.UserID {
-	uuid := uuid.New()
-	userID := entity.UserID(uuid.String())
-
-	return userID
 }

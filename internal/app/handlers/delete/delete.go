@@ -1,3 +1,4 @@
+// Package handlers provides application endpoints
 package handlers
 
 import (
@@ -23,10 +24,12 @@ const (
 	stopTimeout = 5 * time.Second
 )
 
+// AllURLDeleter Storage interface for delete handler
 type AllURLDeleter interface {
 	DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error
 }
 
+// DeleteHandler Endpoints for delete operations
 type DeleteHandler struct {
 	deleter AllURLDeleter
 
@@ -35,6 +38,7 @@ type DeleteHandler struct {
 	msgChan chan entity.DeletedURLBatch
 }
 
+// NewDeleteHandler Creates delete handler using obtained storage
 func NewDeleteHandler(deleter AllURLDeleter) *DeleteHandler {
 	instance := &DeleteHandler{
 		deleter: deleter,
@@ -52,6 +56,12 @@ func NewDeleteHandler(deleter AllURLDeleter) *DeleteHandler {
 	return instance
 }
 
+// DeleteUserURLHandler Process endpoint for user deletion
+//
+// Returns 202(StatusAccepted) if deletion was successful
+// Returns 500(StatusInternalServerError) if user id is incorrect
+// Returns 500(StatusInternalServerError) if user id could not be parsed
+// Returns 400(StatusBadRequest) if user id could not be processed for deletion
 func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, req *http.Request) {
 		userIDCtx, ok := req.Context().Value(entity.UserIDCtxKey{}).(entity.UserIDCtx)
@@ -77,6 +87,7 @@ func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 	}
 }
 
+// Stop Stops user deletion process
 func (h *DeleteHandler) Stop() {
 	sync.OnceFunc(func() {
 		close(h.done)
@@ -132,17 +143,17 @@ func (h *DeleteHandler) flushDeletedURLs() {
 			zap.L().Info("shutting down server; last flushing")
 			flush()
 			return
-		case urls, ok := <- h.msgChan:
+		case urls, ok := <-h.msgChan:
 			if !ok {
 				return
 			}
 
-			if len(storageBatch) + len(urls) > flushBufLen {
+			if len(storageBatch)+len(urls) > flushBufLen {
 				flush()
 			}
 
 			storageBatch = append(storageBatch, urls...)
-		case <- ticker.C:
+		case <-ticker.C:
 			if len(storageBatch) == 0 {
 				continue
 			}

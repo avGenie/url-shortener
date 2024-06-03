@@ -1,112 +1,163 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
-	"path"
+	"sync"
+	"time"
 
-	"os"
-	"strings"
+	"go.uber.org/zap"
 
+	"github.com/avGenie/url-shortener/cmd/client/client"
+	"github.com/avGenie/url-shortener/cmd/client/random"
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/logger"
-	"go.uber.org/zap"
+	"github.com/avGenie/url-shortener/internal/app/models"
+)
+
+const (
+	maxCount     = 1000
+	batchCount   = 3
+	routineCount = 10
 )
 
 func main() {
-	cnf := config.InitConfig()
-
-	err := logger.Initialize(cnf)
+	config, err := config.InitConfig()
 	if err != nil {
-		panic(err.Error())
+		zap.L().Fatal("Failed to initialize config", zap.Error(err))
 	}
-
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-	var data = "https://practicum.yandex.ru/"
-	url, err := postRequest(client, data, cnf.NetAddr)
+	err = logger.Initialize(config)
 	if err != nil {
-		log.Println("Post request error: : %w", err)
-		zap.L().Fatal("post request error", zap.Error(err))
-		panic(err)
+		zap.L().Fatal("Failed to initialize logger", zap.Error(err))
 	}
 
-	getRequest(client, url, cnf.BaseURIPrefix)
+	config.NetAddr = fmt.Sprintf("http://%s", config.NetAddr)
+
+	now := time.Now()
+	wg := &sync.WaitGroup{}
+	wg.Add(routineCount)
+	for i := 0; i < routineCount; i++ {
+		go testPostRequest(config, wg)
+	}
+
+	wg.Add(routineCount)
+	for i := 0; i < routineCount; i++ {
+		go testPostShortenRequest(config, wg)
+	}
+
+	wg.Add(routineCount)
+	for i := 0; i < routineCount; i++ {
+		go testPostShortenBatchRequest(config, wg)
+	}
+
+	wg.Wait()
+	fmt.Printf("spended time: %s\n", time.Since(now))
 }
 
-func readFromConsole() string {
-	// приглашение в консоли
-	fmt.Println("Input URL")
-	// открываем потоковое чтение из консоли
-	reader := bufio.NewReader(os.Stdin)
-	// читаем строку из консоли
-	data, err := reader.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-	data = strings.TrimSuffix(data, "\n")
-
-	return data
+func testPostRequest(config config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
+	postRequest(config)
 }
 
-func postRequest(client *http.Client, data, netAddr string) (string, error) {
-	url := fmt.Sprintf("http://%s", netAddr)
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader([]byte(data)))
-	if err != nil {
-		zap.L().Error("request couldn't be created", zap.String("method", "POST"), zap.Error(err))
-		return "", err
-	}
-
-	response, err := client.Do(request)
-	if err != nil {
-		zap.L().Error("request failed", zap.String("method", "POST"), zap.Error(err))
-		return "", err
-	}
-
-	bodyBytes, err := io.ReadAll(response.Body)
-	defer response.Body.Close()
-
-	if err != nil {
-		zap.L().Error("failed to read response body", zap.String("method", "POST"), zap.Error(err))
-		return "", err
-	}
-
-	zap.L().Info(
-		"request output",
-		zap.String("method", "POST"),
-		zap.String("body", string(bodyBytes)),
-		zap.Int("status", response.StatusCode),
-	)
-
-	return path.Base(string(bodyBytes)), nil
+func testPostShortenRequest(config config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
+	postShortenRequest(config)
 }
 
-func getRequest(client *http.Client, url, baseURIPrefix string) {
-	requestURL := fmt.Sprintf("%s/%s", baseURIPrefix, url)
-	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
-	if err != nil {
-		zap.L().Error("request couldn't be created", zap.String("method", "GET"), zap.Error(err))
-		return
+func testPostShortenBatchRequest(config config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
+	postShortenBatchRequest(config)
+}
+
+func postRequest(config config.Config) {
+	c := client.NewClient(config.NetAddr)
+	var cookie *http.Cookie
+
+	for i := 0; i < maxCount; i++ {
+		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
+		res, err := c.SendPostRequest([]byte(random.GenerateRandomURL()), cookie)
+		if err != nil {
+			zap.L().Error("PostShortenRequest SendPostRequest", zap.Error(err))
+			continue
+		}
+		defer res.Body.Close()
+
+		if cookie == nil {
+			cookies := res.Cookies()
+			cookie = cookies[0]
+		}
+	}
+}
+
+func postShortenRequest(config config.Config) {
+	netAddr := fmt.Sprintf("%s/api/shorten", config.NetAddr)
+	c := client.NewClient(netAddr)
+	var cookie *http.Cookie
+
+	for i := 0; i < maxCount; i++ {
+		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
+		request := models.Request{
+			URL: random.GenerateRandomURL(),
+		}
+
+		data, err := json.Marshal(request)
+		if err != nil {
+			zap.L().Error("PostShortenRequest marshall", zap.Error(err))
+			continue
+		}
+
+		res, err := c.SendPostRequest(data, cookie)
+		if err != nil {
+			zap.L().Error("PostShortenRequest SendPostRequest", zap.Error(err))
+			continue
+		}
+		defer res.Body.Close()
+
+		if cookie == nil {
+			cookies := res.Cookies()
+			cookie = cookies[0]
+		}
+	}
+}
+
+func postShortenBatchRequest(config config.Config) {
+	netAddr := fmt.Sprintf("%s/api/shorten/batch", config.NetAddr)
+	c := client.NewClient(netAddr)
+	var cookie *http.Cookie
+
+	for i := 0; i < maxCount; i++ {
+		time.Sleep(random.SleepDuration(10, 50) * time.Millisecond)
+		data, err := createBatchData()
+		if err != nil {
+			zap.L().Error("PostShortenRequest marshall", zap.Error(err))
+			continue
+		}
+
+		res, err := c.SendPostRequest(data, cookie)
+		if err != nil {
+			zap.L().Error("PostShortenRequest SendPostRequest", zap.Error(err))
+			continue
+		}
+		defer res.Body.Close()
+
+		if cookie == nil {
+			cookies := res.Cookies()
+			cookie = cookies[0]
+		}
+	}
+}
+
+func createBatchData() ([]byte, error) {
+	batch := make(models.ReqBatch, 0, batchCount)
+	for i := 0; i < batchCount; i++ {
+		randomString := random.GenerateRandomString()
+		url := random.GenerateURL(randomString)
+		batch = append(batch, models.BatchObjectRequest{
+			ID:  randomString,
+			URL: url,
+		})
 	}
 
-	response, err := client.Do(request)
-	if err != nil {
-		zap.L().Error("request failed", zap.String("method", "GET"), zap.Error(err))
-		return
-	}
-	defer response.Body.Close()
-
-	zap.L().Info(
-		"request output",
-		zap.String("method", "GET"),
-		zap.String("location", response.Header.Get("Location")),
-		zap.Int("status", response.StatusCode),
-	)
+	return json.Marshal(batch)
 }
