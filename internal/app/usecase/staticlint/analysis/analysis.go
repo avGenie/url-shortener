@@ -50,6 +50,8 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
 	"golang.org/x/tools/go/analysis/passes/unusedwrite"
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
+
+	osexit "github.com/avGenie/url-shortener/internal/app/usecase/staticlint/analysis/os_exit_error"
 )
 
 // GetAnalyzers Returns all standard analyzers
@@ -104,5 +106,6 @@ func GetAnalyzers() []*analysis.Analyzer {
 		unusedresult.Analyzer,
 		unusedwrite.Analyzer,
 		usesgenerics.Analyzer,
+		osexit.OSExitAnalyzer,
 	}
 }

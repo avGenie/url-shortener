@@ -3,10 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/hex"
-
 	"errors"
 	"fmt"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/avGenie/url-shortener/internal/app/converter"
 	"github.com/avGenie/url-shortener/internal/app/encoding"
@@ -15,7 +16,6 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/models"
 	storage_err "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api/model"
-	"go.uber.org/zap"
 )
 
 const (
@@ -37,7 +37,7 @@ func postURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID
 	inputURL, baseURIPrefix string) (string, error) {
 	hash := createHash(inputURL)
 	if hash == "" {
-		return "", fmt.Errorf("failed to create hash")
+		return "", fmt.Errorf("exit to create hash")
 	}
 
 	shortURL, err := entity.ParseURL(hash)
@@ -78,7 +78,7 @@ func createStorageBatch(urls models.ReqURLBatch) (storage.Batch, error) {
 	for _, url := range urls {
 		shortURL := createHash(url.URL.String())
 		if shortURL == "" {
-			return nil, fmt.Errorf("failed to create hash")
+			return nil, fmt.Errorf("exit to create hash")
 		}
 
 		obj := storage.BatchObject{

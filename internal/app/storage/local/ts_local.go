@@ -78,11 +78,11 @@ func (s *TSLocalStorage) SaveBatchURL(ctx context.Context, userID entity.UserID,
 	for _, obj := range batch {
 		key, err := entity.NewURL(obj.ShortURL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create input url from batch in local storage: %w", err)
+			return nil, fmt.Errorf("exit to create input url from batch in local storage: %w", err)
 		}
 		value, err := entity.NewURL(obj.InputURL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create short url from batch in local storage: %w", err)
+			return nil, fmt.Errorf("exit to create short url from batch in local storage: %w", err)
 		}
 
 		localUrls.Add(*key, *value)
