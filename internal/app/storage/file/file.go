@@ -31,7 +31,6 @@ type FileStorage struct {
 
 	lastID uint
 	IsTemp bool
-
 }
 
 // NewFileStorage Creates a new file storage object
