@@ -1,3 +1,4 @@
+// Package osexiterroranalyzer implements os.Exit constructions checker
 package osexiterroranalyzer
 
 import (
@@ -11,6 +12,7 @@ const (
 	exprName  = "Exit"
 )
 
+// OSExitAnalyzer os.Exit analyzer variable
 var OSExitAnalyzer = &analysis.Analyzer{
 	Name: "os_exit_error",
 	Doc:  "check for os.Exit calls",
