@@ -20,6 +20,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
 
+// Variables which contains build flag values
 var (
 	// Version Contains current version of program
 	Version string
