@@ -16,8 +16,8 @@ import (
 type TSLocalStorage struct {
 	model.Storage
 
-	mutex sync.RWMutex
 	urls  LocalStorage
+	mutex sync.RWMutex
 }
 
 // NewTSLocalStorage Creates thread save local storage object

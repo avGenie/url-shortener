@@ -23,16 +23,15 @@ import (
 type FileStorage struct {
 	model.Storage
 
-	mutex sync.RWMutex
-
+	cache    local.LocalStorage
+	encoder  *json.Encoder
 	file     *os.File
 	fileName string
-	encoder  *json.Encoder
+	mutex    sync.RWMutex
 
-	cache  local.LocalStorage
 	lastID uint
-
 	IsTemp bool
+
 }
 
 // NewFileStorage Creates a new file storage object

@@ -15,9 +15,9 @@ func TestAuthMiddleware(t *testing.T) {
 		nextHandler http.HandlerFunc
 	}
 	tests := []struct {
-		name         string
 		userIDCookie *http.Cookie
 		want         want
+		name         string
 	}{
 		{
 			name: "correct cookie",

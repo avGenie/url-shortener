@@ -34,19 +34,19 @@ func TestGetHandler(t *testing.T) {
 	s := mock.NewMockURLGetter(ctrl)
 
 	type want struct {
-		statusCode  int
 		contentType string
 		location    string
 		expectErr   error
 		expectURL   *entity.URL
 		message     string
+		statusCode  int
 	}
 	tests := []struct {
 		name              string
 		request           string
 		userIDCtx         entity.UserIDCtx
-		exitBeforeGetting bool
 		want              want
+		exitBeforeGetting bool
 	}{
 		{
 			name:    "correct input data",
@@ -181,19 +181,19 @@ func TestGetUserURLHandler(t *testing.T) {
 	]`)
 
 	type want struct {
-		statusCode  int
 		contentType string
 		expectErr   error
 		message     string
+		statusCode  int
 	}
 	tests := []struct {
 		name               string
 		baseURIPrefix      string
+		want               want
 		outputStorageBatch models.AllUrlsBatch
 		userIDCtx          entity.UserIDCtx
 		invalidOutput      bool
 		exitBeforeGetting  bool
-		want               want
 	}{
 		{
 			name:               "correct input data",
@@ -331,12 +331,12 @@ func TestGetPingDBHandler(t *testing.T) {
 	s := mock.NewMockStoragePinger(ctrl)
 
 	type want struct {
-		statusCode int
 		err        error
+		statusCode int
 	}
 	tests := []struct {
-		name string
 		want want
+		name string
 	}{
 		{
 			name: "successfull ping",
