@@ -31,10 +31,10 @@ func TestPostHandlerURL(t *testing.T) {
 	s := mock.NewMockURLSaver(ctrl)
 
 	type want struct {
-		statusCode   int
+		expectedErr  error
 		contentType  string
 		expectedBody string
-		expectedErr  error
+		statusCode   int
 		isSaveURL    bool
 	}
 	tests := []struct {
@@ -183,11 +183,11 @@ func TestPostHandlerJSON(t *testing.T) {
 	s := mock.NewMockURLSaver(ctrl)
 
 	type want struct {
-		statusCode   int
+		expectedErr  error
 		contentType  string
 		expectedBody string
 		urlsValue    string
-		expectedErr  error
+		statusCode   int
 		isSaveURL    bool
 	}
 	tests := []struct {
@@ -412,12 +412,12 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 	}
 
 	type want struct {
-		statusCode    int
+		expectedErr   error
 		contentType   string
 		expectedBody  string
 		urlsValue     string
 		expectedBatch model.Batch
-		expectedErr   error
+		statusCode    int
 	}
 	tests := []struct {
 		name          string
@@ -425,8 +425,8 @@ func TestPostHandlerJSONBatch(t *testing.T) {
 		body          string
 		baseURIPrefix string
 		userIDCtx     entity.UserIDCtx
-		isSaveURL     bool
 		want          want
+		isSaveURL     bool
 	}{
 		{
 			name:          "correct input data",

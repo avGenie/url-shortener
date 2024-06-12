@@ -8,16 +8,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/avGenie/url-shortener/internal/app/entity"
-	"github.com/avGenie/url-shortener/internal/app/models"
-	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
-	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
+
+	"github.com/avGenie/url-shortener/internal/app/entity"
+	"github.com/avGenie/url-shortener/internal/app/models"
+	api "github.com/avGenie/url-shortener/internal/app/storage/api/errors"
+	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
 
 const (
@@ -97,20 +98,20 @@ func (s *PostgresStorage) SaveBatchURL(ctx context.Context, userID entity.UserID
 	query := `INSERT INTO url(short_url, url, user_id) VALUES($1, $2, $3)`
 	tx, err := s.db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create transaction in postgres: %w", err)
+		return nil, fmt.Errorf("exit to create transaction in postgres: %w", err)
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare query in postgres: %w", err)
+		return nil, fmt.Errorf("exit to prepare query in postgres: %w", err)
 	}
 	defer stmt.Close()
 
 	for _, obj := range batch {
 		_, err = stmt.ExecContext(ctx, obj.ShortURL, obj.InputURL, userID.String())
 		if err != nil {
-			return nil, fmt.Errorf("failed to write batch object to postgres: %w", err)
+			return nil, fmt.Errorf("exit to write batch object to postgres: %w", err)
 		}
 	}
 	tx.Commit()
@@ -131,7 +132,7 @@ func (s *PostgresStorage) GetURL(ctx context.Context, userID entity.UserID, key 
 func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create get all urls transaction in postgres: %w", err)
+		return nil, fmt.Errorf("exit to create get all urls transaction in postgres: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -154,7 +155,7 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 	for rows.Next() {
 		var url models.AllUrlsResponse
 		var deleted bool
-		err := rows.Scan(&url.OriginalURL, &url.ShortURL, &deleted)
+		err = rows.Scan(&url.OriginalURL, &url.ShortURL, &deleted)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, api.ErrShortURLNotFound
@@ -180,7 +181,7 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction while getting all urls in postgres: %w", err)
+		return nil, fmt.Errorf("exit to commit transaction while getting all urls in postgres: %w", err)
 	}
 
 	if len(urlsBatch) == 0 && isDeleted {
@@ -194,21 +195,21 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 func (s *PostgresStorage) DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create delete batch url transaction in postgres: %w", err)
+		return fmt.Errorf("exit to create delete batch url transaction in postgres: %w", err)
 	}
 	defer tx.Rollback()
 
 	query := `UPDATE url SET deleted = true WHERE user_id=$1 AND short_url=$2`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("failed to prepare query while deleting urls in postgres: %w", err)
+		return fmt.Errorf("exit to prepare query while deleting urls in postgres: %w", err)
 	}
 	defer stmt.Close()
 
 	for _, url := range urls {
 		_, err = stmt.ExecContext(ctx, url.UserID, url.ShortURL)
 		if err != nil {
-			return fmt.Errorf("failed to update deleted url in postgres: %w", err)
+			return fmt.Errorf("exit to update deleted url in postgres: %w", err)
 		}
 	}
 
@@ -223,7 +224,7 @@ func (s *PostgresStorage) DeleteBatchURL(ctx context.Context, urls entity.Delete
 func (s *PostgresStorage) getURL(ctx context.Context, key entity.URL) (*entity.URL, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create get user url transaction in postgres: %w", err)
+		return nil, fmt.Errorf("exit to create get user url transaction in postgres: %w", err)
 	}
 	query := `SELECT id, url, deleted FROM url WHERE short_url=@shortUrl`
 	args := pgx.NamedArgs{
@@ -252,7 +253,7 @@ func (s *PostgresStorage) getURL(ctx context.Context, key entity.URL) (*entity.U
 
 	if deleted {
 		query = `DELETE FROM url WHERE id=$1`
-		_, err := s.db.ExecContext(ctx, query, id)
+		_, err = s.db.ExecContext(ctx, query, id)
 		if err != nil {
 			zap.L().Error(
 				"unable to delete url while getting from postgres",
@@ -265,7 +266,7 @@ func (s *PostgresStorage) getURL(ctx context.Context, key entity.URL) (*entity.U
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction while getting user url in postgres: %w", err)
+		return nil, fmt.Errorf("exit to commit transaction while getting user url in postgres: %w", err)
 	}
 
 	url, err := entity.NewURL(dbURL)
@@ -279,7 +280,7 @@ func (s *PostgresStorage) getURL(ctx context.Context, key entity.URL) (*entity.U
 func (s *PostgresStorage) getUserURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create get user url transaction in postgres: %w", err)
+		return nil, fmt.Errorf("exit to create get user url transaction in postgres: %w", err)
 	}
 	query := `SELECT url, deleted FROM url WHERE user_id = @userID AND short_url = @shortUrl`
 	args := pgx.NamedArgs{
@@ -319,7 +320,7 @@ func (s *PostgresStorage) getUserURL(ctx context.Context, userID entity.UserID, 
 	}
 	err = tx.Commit()
 	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction while getting user url in postgres: %w", err)
+		return nil, fmt.Errorf("exit to commit transaction while getting user url in postgres: %w", err)
 	}
 
 	url, err := entity.NewURL(dbURL)

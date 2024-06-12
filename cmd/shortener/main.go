@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -19,7 +20,19 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
 )
 
+// Variables which contains build flag values
+var (
+	// Version Contains current version of program
+	Version = "N/A"
+	// BuildTime Contains build time
+	BuildTime = "N/A"
+	// BuildCommit Contains hash of build commit
+	BuildCommit = "N/A"
+)
+
 func main() {
+	printProgramInfo()
+
 	config, err := config.InitConfig()
 	if err != nil {
 		zap.L().Fatal("Failed to initialize config", zap.Error(err))
@@ -88,4 +101,10 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 		zap.L().Error("error while shutting down server", zap.Error(err))
 	}
 	router.Stop()
+}
+
+func printProgramInfo() {
+	fmt.Printf("Build version: %s\n", Version)
+	fmt.Printf("Build date: %s\n", BuildTime)
+	fmt.Printf("Build commit: %s\n", BuildCommit)
 }

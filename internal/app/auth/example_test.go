@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+
 	"github.com/avGenie/url-shortener/internal/app/entity"
 )
 
