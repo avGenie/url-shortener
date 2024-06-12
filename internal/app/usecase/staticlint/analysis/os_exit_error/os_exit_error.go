@@ -34,7 +34,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					return true
 				}
 
-
 				if identName == ident.Name && exprName == fun.Sel.Name {
 					pass.Reportf(x.Pos(), "os exit call error")
 				}

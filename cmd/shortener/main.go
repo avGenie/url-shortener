@@ -25,9 +25,9 @@ var (
 	// Version Contains current version of program
 	Version = "N/A"
 	// BuildTime Contains build time
-	BuildTime  = "N/A"
+	BuildTime = "N/A"
 	// BuildCommit Contains hash of build commit
-	BuildCommit  = "N/A"
+	BuildCommit = "N/A"
 )
 
 func main() {
