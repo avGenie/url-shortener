@@ -24,12 +24,19 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch x := node.(type) {
 			case *ast.CallExpr:
-				if fun, ok := x.Fun.(*ast.SelectorExpr); ok {
-					if ident, ok := fun.X.(*ast.Ident); ok {
-						if identName == ident.Name && exprName == fun.Sel.Name {
-							pass.Reportf(x.Pos(), "os exit call error")
-						}
-					}
+				fun, ok := x.Fun.(*ast.SelectorExpr)
+				if !ok {
+					return true
+				}
+
+				ident, ok := fun.X.(*ast.Ident)
+				if !ok {
+					return true
+				}
+
+
+				if identName == ident.Name && exprName == fun.Sel.Name {
+					pass.Reportf(x.Pos(), "os exit call error")
 				}
 			}
 

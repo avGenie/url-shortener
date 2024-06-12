@@ -23,14 +23,12 @@ import (
 // Variables which contains build flag values
 var (
 	// Version Contains current version of program
-	Version string
+	Version = "N/A"
 	// BuildTime Contains build time
-	BuildTime string
+	BuildTime  = "N/A"
 	// BuildCommit Contains hash of build commit
-	BuildCommit string
+	BuildCommit  = "N/A"
 )
-
-const naValue = "N/A"
 
 func main() {
 	printProgramInfo()
@@ -106,21 +104,7 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 }
 
 func printProgramInfo() {
-	version := naValue
-	if Version != "" {
-		version = Version
-	}
-	fmt.Printf("Build version: %s\n", version)
-
-	date := naValue
-	if BuildTime != "" {
-		date = BuildTime
-	}
-	fmt.Printf("Build date: %s\n", date)
-
-	commit := naValue
-	if BuildCommit != "" {
-		commit = BuildCommit
-	}
-	fmt.Printf("Build commit: %s\n", commit)
+	fmt.Printf("Build version: %s\n", Version)
+	fmt.Printf("Build date: %s\n", BuildTime)
+	fmt.Printf("Build commit: %s\n", BuildCommit)
 }
