@@ -15,6 +15,7 @@ type Config struct {
 	DBFileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DBStorageConnect  string `env:"DATABASE_DSN"`
 	ProfilerFile      string `env:"PROFILER_FILE"`
+	HTTPS             bool   `env:"ENABLE_HTTPS"`
 }
 
 // InitConfig Initialize config from flag and env variables
@@ -26,6 +27,7 @@ func InitConfig() (Config, error) {
 	flag.StringVar(&config.DBFileStoragePath, "f", "/tmp/short-url-db.json", "database storage path")
 	flag.StringVar(&config.DBStorageConnect, "d", "", "database credentials in format: host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable")
 	flag.StringVar(&config.ProfilerFile, "p", "", "profiler file name")
+	flag.BoolVar(&config.HTTPS, "s", false, "enable HTTPS")
 	flag.Parse()
 
 	if err := env.Parse(&config); err != nil {
