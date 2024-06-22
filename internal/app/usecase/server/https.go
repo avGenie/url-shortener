@@ -11,7 +11,7 @@ import (
 // startHTTPS Starts HTTPS server
 func startHTTPS(server *http.Server) {
 	zap.L().Info("Start HTTPS server", zap.String("addr", server.Addr))
-	
+
 	cert, err := https.GenerateTLSCert()
 	if err != nil && err != http.ErrServerClosed {
 		zap.L().Fatal("fatal error while starting https server", zap.Error(err))
