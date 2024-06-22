@@ -18,6 +18,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
+	usecase_server "github.com/avGenie/url-shortener/internal/app/usecase/server"
 )
 
 // Variables which contains build flag values
@@ -55,11 +56,6 @@ func main() {
 	}
 	defer storage.Close()
 
-	sugar.Infow(
-		"Starting server",
-		"addr", config.NetAddr,
-	)
-
 	startHTTPServer(config, storage)
 }
 
@@ -74,12 +70,7 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 		Handler: router.Mux,
 	}
 
-	go func() {
-		err := http.ListenAndServe(config.NetAddr, router.Mux)
-		if err != nil && err != http.ErrServerClosed {
-			zap.L().Fatal("fatal error while starting server", zap.Error(err))
-		}
-	}()
+	go usecase_server.Start(config.HTTPS, server)
 
 	<-ctx.Done()
 
