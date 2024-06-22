@@ -13,7 +13,7 @@ type jsonConfig struct {
 	BaseURIPrefix     string `json:"base_url"`
 	DBFileStoragePath string `json:"file_storage_path"`
 	DBStorageConnect  string `json:"database_dsn"`
-	Enable_HTTPS      bool   `json:"enable_https"`
+	EnableHTTPS      bool   `json:"enable_https"`
 }
 
 func parseJSONConfig(config *Config) error {
@@ -61,7 +61,7 @@ func fillConfigByJSON(config *Config, jsonConfig jsonConfig) {
 		config.DBStorageConnect = jsonConfig.DBStorageConnect
 	}
 
-	if !config.Enable_HTTPS {
-		config.Enable_HTTPS = jsonConfig.Enable_HTTPS
+	if !config.EnableHTTPS {
+		config.EnableHTTPS = jsonConfig.EnableHTTPS
 	}
 }

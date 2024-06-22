@@ -70,7 +70,7 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 		Handler: router.Mux,
 	}
 
-	go usecase_server.Start(config.Enable_HTTPS, server)
+	go usecase_server.Start(config.EnableHTTPS, server)
 
 	<-ctx.Done()
 
