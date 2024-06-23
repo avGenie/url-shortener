@@ -60,7 +60,13 @@ func main() {
 }
 
 func startHTTPServer(config config.Config, storage model.Storage) {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	ctx, cancel := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		os.Interrupt,
+	)
 	defer cancel()
 
 	router := handlers.NewRouter(config, storage)
