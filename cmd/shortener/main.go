@@ -18,6 +18,7 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
+	cidr "github.com/avGenie/url-shortener/internal/app/usecase/CIDR"
 	usecase_server "github.com/avGenie/url-shortener/internal/app/usecase/server"
 )
 
@@ -56,10 +57,21 @@ func main() {
 	}
 	defer storage.Close()
 
-	startHTTPServer(config, storage)
+	var cidrObj *cidr.CIDR
+	if config.TrustedSubnet != "" {
+		cidrObj, err = cidr.NewCIDR(config.TrustedSubnet)
+		if err != nil {
+			sugar.Fatalw(
+				err.Error(),
+				"event", "cidr creation",
+			)
+		}
+	}
+
+	startHTTPServer(config, storage, cidrObj)
 }
 
-func startHTTPServer(config config.Config, storage model.Storage) {
+func startHTTPServer(config config.Config, storage model.Storage, cidr *cidr.CIDR) {
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGTERM,
@@ -69,7 +81,7 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 	)
 	defer cancel()
 
-	router := handlers.NewRouter(config, storage)
+	router := handlers.NewRouter(config, storage, cidr)
 
 	server := &http.Server{
 		Addr:    config.NetAddr,

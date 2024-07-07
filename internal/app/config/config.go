@@ -24,6 +24,7 @@ type Config struct {
 	DBStorageConnect  string `json:"database_dsn" env:"DATABASE_DSN"`
 	ProfilerFile      string `json:"-" env:"PROFILER_FILE"`
 	ConfigFile        string `json:"-" env:"CONFIG"`
+	TrustedSubnet     string `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	EnableHTTPS       bool   `json:"enable_https" env:"ENABLE_HTTPS"`
 }
 
@@ -37,6 +38,7 @@ func InitConfig() (Config, error) {
 	flag.StringVar(&config.DBStorageConnect, "d", "", "database credentials in format: host=host port=port user=myuser password=xxxx dbname=mydb sslmode=disable")
 	flag.StringVar(&config.ProfilerFile, "p", "", "profiler file name")
 	flag.StringVar(&config.ConfigFile, "c", "", "configuration JSON file")
+	flag.StringVar(&config.TrustedSubnet, "t", "", "trusted subnet")
 	flag.BoolVar(&config.EnableHTTPS, "s", false, "enable HTTPS")
 	flag.Parse()
 
