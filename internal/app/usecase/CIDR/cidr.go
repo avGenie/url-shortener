@@ -7,8 +7,8 @@ import (
 
 // CIDR Struct describing Classless Inter-Domain Routing
 type CIDR struct {
-	ip    net.IP
 	ipNet *net.IPNet
+	ip    net.IP
 }
 
 // NewCIDR Creates CIDR object
@@ -30,6 +30,6 @@ func (c CIDR) Contains(ip string) bool {
 	if netIP == nil {
 		return false
 	}
-	
+
 	return c.ipNet.Contains(netIP)
 }
