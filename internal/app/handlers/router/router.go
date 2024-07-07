@@ -49,6 +49,7 @@ func createRouter(config config.Config, deleteHandler *handlers.DeleteHandler, d
 
 	r.Get("/{url}", get.URLHandler(db))
 	r.Get("/ping", get.PingDBHandler(db))
+	r.Get("/api/internal/stats", get.StatsHandler(db))
 	r.Get("/api/user/urls", get.UserURLsHandler(db, config.BaseURIPrefix))
 
 	r.Delete("/api/user/urls", deleteHandler.DeleteUserURLHandler())

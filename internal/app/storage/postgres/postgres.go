@@ -191,6 +191,27 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 	return urlsBatch, nil
 }
 
+func (s *PostgresStorage) GetStatistic(ctx context.Context) (models.CountStatistic, error) {
+	query := `SELECT COUNT(DISTINCT user_id), COUNT(short_url) FROM url`
+
+	row := s.db.QueryRowContext(ctx, query)
+	if row == nil {
+		return models.CountStatistic{}, fmt.Errorf("error while postgres request execution while get statistic")
+	}
+
+	if row.Err() != nil {
+		return models.CountStatistic{}, fmt.Errorf("error while postgres request execution get statistic: %w", row.Err())
+	}
+
+	var stat models.CountStatistic
+	err := row.Scan(&stat.UserCount, &stat.URLCount)
+	if err != nil {
+		return models.CountStatistic{}, fmt.Errorf("error while processing response row in postgres get statistic: %w", err)
+	}
+
+	return stat, nil
+}
+
 // DeleteBatchURL Delete user URL from postgres DB
 func (s *PostgresStorage) DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error {
 	tx, err := s.db.BeginTx(ctx, nil)
