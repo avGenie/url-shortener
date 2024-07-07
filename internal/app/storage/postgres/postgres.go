@@ -191,6 +191,7 @@ func (s *PostgresStorage) GetAllURLByUserID(ctx context.Context, userID entity.U
 	return urlsBatch, nil
 }
 
+// GetStatistic Returns count of users and URls in storage
 func (s *PostgresStorage) GetStatistic(ctx context.Context) (models.CountStatistic, error) {
 	query := `SELECT COUNT(DISTINCT user_id), COUNT(short_url) FROM url`
 
