@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/avGenie/url-shortener/internal/app/grpc"
 	handlers "github.com/avGenie/url-shortener/internal/app/handlers/router"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
@@ -90,6 +91,10 @@ func startHTTPServer(config config.Config, storage model.Storage, cidr *cidr.CID
 
 	go usecase_server.Start(config.EnableHTTPS, server)
 
+	grpcServer := grpc.NewGRPCServer(config, storage)
+
+	go grpcServer.Start()
+
 	<-ctx.Done()
 
 	if len(config.ProfilerFile) != 0 {
@@ -103,6 +108,8 @@ func startHTTPServer(config config.Config, storage model.Storage, cidr *cidr.CID
 			panic(err)
 		}
 	}
+
+	grpcServer.Stop()
 
 	zap.L().Info("Got interruption signal. Shutting down HTTP server gracefully...")
 	err := server.Shutdown(context.Background())

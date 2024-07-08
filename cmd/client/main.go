@@ -1,19 +1,27 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/avGenie/url-shortener/cmd/client/client"
 	"github.com/avGenie/url-shortener/cmd/client/random"
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/avGenie/url-shortener/internal/app/entity"
+	grpc_context "github.com/avGenie/url-shortener/internal/app/grpc/usecase/context"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/models"
+	shortener "github.com/avGenie/url-shortener/proto"
+	pb "github.com/avGenie/url-shortener/proto"
 )
 
 const (
@@ -34,6 +42,40 @@ func main() {
 
 	config.NetAddr = fmt.Sprintf("http://%s", config.NetAddr)
 
+	grpcTest()
+
+	// stressTestHTTP(config)
+}
+
+func grpcTest() {
+	conn, err := grpc.Dial(":8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	client := pb.NewShortenerClient(conn)
+
+	getOriginalGRPCURL(client, "be89c05e", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
+}
+
+func getOriginalGRPCURL(client shortener.ShortenerClient, url, userID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	ctx = grpc_context.SetUserIDContext(ctx, entity.UserID(userID))
+
+	original, err := client.GetOriginalURL(ctx, &shortener.ShortURL{Url: url})
+	if err != nil {
+		zap.L().Error("getOriginalGRPCURL GetOriginalURL", zap.Error(err))
+
+		return
+	}
+
+	fmt.Println(original)
+}
+
+func stressTestHTTP(config config.Config) {
 	now := time.Now()
 	wg := &sync.WaitGroup{}
 	wg.Add(routineCount)

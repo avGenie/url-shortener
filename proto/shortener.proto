@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package shortener;
+
+message OriginalURL {
+    string url = 1;
+}
+
+message ShortURL {
+    string url = 1;
+}
+
+service Shortener {
+    rpc GetOriginalURL(ShortURL) returns (OriginalURL);
+    rpc GetShortURL(OriginalURL) returns (ShortURL);
+}
