@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// ShortenerServer GRPC server
 type ShortenerServer struct {
 	pb.ShortenerServer
 
@@ -21,6 +22,7 @@ type ShortenerServer struct {
 	server *grpc.Server
 }
 
+// NewGRPCServer Creates new GRPC server
 func NewGRPCServer(config config.Config, storage storage_api.Storage) *ShortenerServer {
 	return &ShortenerServer{
 		storage: storage,
@@ -29,6 +31,7 @@ func NewGRPCServer(config config.Config, storage storage_api.Storage) *Shortener
 	}
 }
 
+// Start Starts GRPC server
 func (s *ShortenerServer) Start() {
 	listen, err := net.Listen("tcp", ":8081")
 	if err != nil {
@@ -45,6 +48,7 @@ func (s *ShortenerServer) Start() {
 	}
 }
 
+// Stop Stops GRPC server
 func (s *ShortenerServer) Stop() {
 	s.server.GracefulStop()
 }

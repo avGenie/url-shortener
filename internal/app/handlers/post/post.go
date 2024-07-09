@@ -33,7 +33,8 @@ type URLBatchSaver interface {
 	SaveBatchURL(ctx context.Context, userID entity.UserID, batch storage.Batch) (storage.Batch, error)
 }
 
-func postURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID,
+// PostURLProcessing Creates URL and saves in storage
+func PostURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID,
 	inputURL, baseURIPrefix string) (string, error) {
 	hash := createHash(inputURL)
 	if hash == "" {

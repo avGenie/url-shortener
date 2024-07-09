@@ -16,20 +16,25 @@ const (
 	pingTimeout = 1 * time.Second
 )
 
+// Errors returning while GET request processing
+//
+// ErrInternal - internal error
+// ErrAllURLNotFound - returned if all URL is not found in storage for given user
 var (
-	errInternal       = errors.New("getting internal error while getting all user urls")
-	errAllURLNotFound = errors.New("urls for this user not found")
+	ErrInternal       = errors.New("getting internal error while getting all user urls")
+	ErrAllURLNotFound = errors.New("urls for this user not found")
 )
 
-func processAllUSerURL(getter AllURLGetter, ctx context.Context, userID entity.UserID, baseURIPrefix string) ([]byte, error) {
+// ProcessAllUserURL Returns all URLs for given user
+func ProcessAllUserURL(getter AllURLGetter, ctx context.Context, userID entity.UserID, baseURIPrefix string) ([]byte, error) {
 	urls, err := getter.GetAllURLByUserID(ctx, userID)
 	if err != nil {
 		zap.L().Error("couldn't get all user urls", zap.Error(err), zap.String("user_id", userID.String()))
-		return nil, errInternal
+		return nil, ErrInternal
 	}
 
 	if len(urls) == 0 {
-		return nil, errAllURLNotFound
+		return nil, ErrAllURLNotFound
 	}
 
 	for index, url := range urls {
@@ -40,7 +45,7 @@ func processAllUSerURL(getter AllURLGetter, ctx context.Context, userID entity.U
 	out, err := json.Marshal(urls)
 	if err != nil {
 		zap.L().Error("error while converting all user urls to output", zap.Error(err))
-		return nil, errInternal
+		return nil, ErrInternal
 	}
 
 	return out, nil

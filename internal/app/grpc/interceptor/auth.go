@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// AuthInterceptor Checks user id from context
 func AuthInterceptor(
 	ctx context.Context,
 	req interface{},

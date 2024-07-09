@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/empty.proto";
+
 package shortener;
 
 message OriginalURL {
@@ -10,7 +12,17 @@ message ShortURL {
     string url = 1;
 }
 
+message UrlsResponse {
+	string shortURL = 1;
+	string originalURL = 2;
+}
+
+message AllUrlsResponse {
+	repeated UrlsResponse urls = 1;
+}
+
 service Shortener {
     rpc GetOriginalURL(ShortURL) returns (OriginalURL);
     rpc GetShortURL(OriginalURL) returns (ShortURL);
+    rpc GetAllUserURL(google.protobuf.Empty) returns (AllUrlsResponse);
 }
