@@ -4,6 +4,8 @@ import "google/protobuf/empty.proto";
 
 package shortener;
 
+option go_package = "github.com/avGenie/url-shortener;url_shortener";
+
 message OriginalURL {
     string url = 1;
 }
@@ -39,9 +41,18 @@ message BatchResponse {
     repeated BatchShortURLObject urls = 1;
 }
 
+message DeleteObject {
+    string shortURL = 1;
+}
+
+message DeleteRequest {
+    repeated DeleteObject urls = 1;
+}
+
 service Shortener {
     rpc GetOriginalURL(ShortURL) returns (OriginalURL);
     rpc GetShortURL(OriginalURL) returns (ShortURL);
     rpc GetBatchShortURL(BatchRequest) returns (BatchResponse);
     rpc GetAllUserURL(google.protobuf.Empty) returns (AllUrlsResponse);
+    rpc DeleteURLs(DeleteRequest) returns (google.protobuf.Empty);
 }

@@ -28,10 +28,10 @@ func AllURLsBatchToAllURLsResponse(batch models.AllUrlsBatch) *pb.AllUrlsRespons
 func BatchRequestToReqBatch(request *pb.BatchRequest) models.ReqBatch {
 	outBatch := make(models.ReqBatch, 0, len(request.Urls))
 
-	for _, val := range request.Urls {
+	for _, val := range request.GetUrls() {
 		batch := models.BatchObjectRequest{
-			ID: val.CorrelationID,
-			URL: val.OriginalURL,
+			ID: val.GetCorrelationID(),
+			URL: val.GetOriginalURL(),
 		}
 
 		outBatch = append(outBatch, batch)
@@ -56,4 +56,15 @@ func ResBatchToBatchResponse(resBatch models.ResBatch) *pb.BatchResponse {
 	return &pb.BatchResponse{
 		Urls: outBatch,
 	}
+}
+
+// DeleteRequestToReqDeletedURLBatch Converts proto DeleteRequest to model ReqDeletedURLBatch struct
+func DeleteRequestToReqDeletedURLBatch(request *pb.DeleteRequest) models.ReqDeletedURLBatch {
+	output := make(models.ReqDeletedURLBatch, 0, len(request.Urls))
+
+	for _, val := range request.GetUrls() {
+		output = append(output, val.GetShortURL())
+	}
+
+	return output
 }

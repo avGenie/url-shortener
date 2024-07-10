@@ -167,3 +167,20 @@ func (s *ShortenerServer) GetBatchShortURL(ctx context.Context, originalBatch *p
 
 	return outBatch, nil
 }
+
+// DeleteURLs Deleted URLs by aliases and user id
+func (s *ShortenerServer) DeleteURLs(ctx context.Context, request *pb.DeleteRequest) (*emptypb.Empty, error) {
+	userID := grpc_context.GetUserIDFromContext(ctx)
+
+	if s.config.BaseURIPrefix == "" {
+		zap.L().Error(ErrEmptyBaseURIPrefixMsg)
+
+		return nil, status.Errorf(codes.Internal, ErrInternalMsg)
+	}
+
+	urlBatch := converter.DeleteRequestToReqDeletedURLBatch(request)
+
+	s.deleteHandler.ProcessDeletedURLs(userID, urlBatch)
+	
+	return &emptypb.Empty{}, nil
+}

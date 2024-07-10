@@ -7,6 +7,7 @@ import (
 
 	"github.com/avGenie/url-shortener/internal/app/config"
 	"github.com/avGenie/url-shortener/internal/app/grpc/interceptor"
+	handlers "github.com/avGenie/url-shortener/internal/app/handlers/delete"
 	storage_api "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	pb "github.com/avGenie/url-shortener/proto"
 	"google.golang.org/grpc"
@@ -19,15 +20,17 @@ type ShortenerServer struct {
 	storage storage_api.Storage
 	config  config.Config
 
-	server *grpc.Server
+	server        *grpc.Server
+	deleteHandler *handlers.DeleteHandler
 }
 
 // NewGRPCServer Creates new GRPC server
 func NewGRPCServer(config config.Config, storage storage_api.Storage) *ShortenerServer {
 	return &ShortenerServer{
-		storage: storage,
-		config:  config,
-		server: grpc.NewServer(grpc.UnaryInterceptor(interceptor.AuthInterceptor)),
+		storage:       storage,
+		config:        config,
+		server:        grpc.NewServer(grpc.UnaryInterceptor(interceptor.AuthInterceptor)),
+		deleteHandler: handlers.NewDeleteHandler(storage),
 	}
 }
 
@@ -42,7 +45,7 @@ func (s *ShortenerServer) Start() {
 	pb.RegisterShortenerServer(s.server, s)
 
 	fmt.Println("Сервер gRPC начал работу")
-	
+
 	if err := s.server.Serve(listen); err != nil {
 		log.Fatal(err)
 	}
