@@ -33,7 +33,8 @@ type URLBatchSaver interface {
 	SaveBatchURL(ctx context.Context, userID entity.UserID, batch storage.Batch) (storage.Batch, error)
 }
 
-func postURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID,
+// PostURLProcessing Creates URL and saves in storage
+func PostURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID,
 	inputURL, baseURIPrefix string) (string, error) {
 	hash := createHash(inputURL)
 	if hash == "" {
@@ -61,6 +62,32 @@ func postURLProcessing(saver URLSaver, ctx context.Context, userID entity.UserID
 	}
 
 	return createOutputPostString(baseURIPrefix, shortURL.String()), nil
+}
+
+// BatchURLProcessing Processes batch URLs and saves in storage
+func BatchURLProcessing(saver URLBatchSaver, ctx context.Context, userID entity.UserID,
+	batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
+	urls, err := converter.ConvertBatchReqToURL(batch)
+	if err != nil {
+		zap.L().Error(post_err.CannotProcessURL, zap.Error(err))
+		return nil, fmt.Errorf(post_err.WrongJSONFormat)
+	}
+
+	sBatch, err := createStorageBatch(urls)
+	if err != nil {
+		zap.L().Error("error while creating storage batch", zap.Error(err))
+		return nil, fmt.Errorf(post_err.InternalServerError)
+	}
+
+	savedBatch, err := saver.SaveBatchURL(ctx, userID, sBatch)
+	if err != nil {
+		zap.L().Error("error while saving url to storage", zap.Error(err))
+		return nil, fmt.Errorf(post_err.InternalServerError)
+	}
+
+	outBatch := converter.ConvertStorageBatchToOutBatch(savedBatch, baseURIPrefix)
+
+	return outBatch, nil
 }
 
 func createOutputPostString(baseURIPrefix, url string) string {
@@ -91,29 +118,4 @@ func createStorageBatch(urls models.ReqURLBatch) (storage.Batch, error) {
 	}
 
 	return dbBatch, nil
-}
-
-func batchURLProcessing(saver URLBatchSaver, ctx context.Context, userID entity.UserID,
-	batch models.ReqBatch, baseURIPrefix string) (models.ResBatch, error) {
-	urls, err := converter.ConvertBatchReqToURL(batch)
-	if err != nil {
-		zap.L().Error(post_err.CannotProcessURL, zap.Error(err))
-		return nil, fmt.Errorf(post_err.WrongJSONFormat)
-	}
-
-	sBatch, err := createStorageBatch(urls)
-	if err != nil {
-		zap.L().Error("error while creating storage batch", zap.Error(err))
-		return nil, fmt.Errorf(post_err.InternalServerError)
-	}
-
-	savedBatch, err := saver.SaveBatchURL(ctx, userID, sBatch)
-	if err != nil {
-		zap.L().Error("error while saving url to storage", zap.Error(err))
-		return nil, fmt.Errorf(post_err.InternalServerError)
-	}
-
-	outBatch := converter.ConvertStorageBatchToOutBatch(savedBatch, baseURIPrefix)
-
-	return outBatch, nil
 }

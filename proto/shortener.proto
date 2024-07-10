@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package shortener;
+
+option go_package = "github.com/avGenie/url-shortener;url_shortener";
+
+message OriginalURL {
+    string url = 1;
+}
+
+message ShortURL {
+    string url = 1;
+}
+
+message UrlsResponse {
+	string shortURL = 1;
+	string originalURL = 2;
+}
+
+message AllUrlsResponse {
+	repeated UrlsResponse urls = 1;
+}
+
+message BatchOriginalURLObject {
+    string correlationID = 1;
+    string originalURL = 2;
+}
+
+message BatchShortURLObject {
+    string correlationID = 1;
+    string shortURL = 2;
+}
+
+message BatchRequest {
+    repeated BatchOriginalURLObject urls = 1;
+}
+
+message BatchResponse {
+    repeated BatchShortURLObject urls = 1;
+}
+
+message DeleteObject {
+    string shortURL = 1;
+}
+
+message DeleteRequest {
+    repeated DeleteObject urls = 1;
+}
+
+message StatisticResposne {
+    int32 urlsCount = 1;
+    int32 usersCount = 2;
+}
+
+service Shortener {
+    rpc GetOriginalURL(ShortURL) returns (OriginalURL);
+    rpc GetShortURL(OriginalURL) returns (ShortURL);
+    rpc GetBatchShortURL(BatchRequest) returns (BatchResponse);
+    rpc GetAllUserURL(google.protobuf.Empty) returns (AllUrlsResponse);
+    rpc DeleteURLs(DeleteRequest) returns (google.protobuf.Empty);
+
+    rpc GetStatistic(google.protobuf.Empty) returns (StatisticResposne);
+}

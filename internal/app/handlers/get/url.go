@@ -113,9 +113,9 @@ func UserURLsHandler(getter AllURLGetter, baseURIPrefix string) http.HandlerFunc
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		out, err := processAllUSerURL(getter, ctx, userIDCtx.UserID, baseURIPrefix)
+		out, err := ProcessAllUserURL(getter, ctx, userIDCtx.UserID, baseURIPrefix)
 		if err != nil {
-			if errors.Is(err, errAllURLNotFound) {
+			if errors.Is(err, ErrAllURLNotFound) {
 				writer.WriteHeader(http.StatusNoContent)
 				return
 			}

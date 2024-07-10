@@ -14,10 +14,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/avGenie/url-shortener/internal/app/config"
+	"github.com/avGenie/url-shortener/internal/app/grpc"
 	handlers "github.com/avGenie/url-shortener/internal/app/handlers/router"
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	storage "github.com/avGenie/url-shortener/internal/app/storage/api"
 	"github.com/avGenie/url-shortener/internal/app/storage/api/model"
+	cidr "github.com/avGenie/url-shortener/internal/app/usecase/CIDR"
 	usecase_server "github.com/avGenie/url-shortener/internal/app/usecase/server"
 )
 
@@ -56,10 +58,21 @@ func main() {
 	}
 	defer storage.Close()
 
-	startHTTPServer(config, storage)
+	var cidrObj *cidr.CIDR
+	if config.TrustedSubnet != "" {
+		cidrObj, err = cidr.NewCIDR(config.TrustedSubnet)
+		if err != nil {
+			sugar.Fatalw(
+				err.Error(),
+				"event", "cidr creation",
+			)
+		}
+	}
+
+	startHTTPServer(config, storage, cidrObj)
 }
 
-func startHTTPServer(config config.Config, storage model.Storage) {
+func startHTTPServer(config config.Config, storage model.Storage, cidr *cidr.CIDR) {
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGTERM,
@@ -69,7 +82,7 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 	)
 	defer cancel()
 
-	router := handlers.NewRouter(config, storage)
+	router := handlers.NewRouter(config, storage, cidr)
 
 	server := &http.Server{
 		Addr:    config.NetAddr,
@@ -77,6 +90,10 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 	}
 
 	go usecase_server.Start(config.EnableHTTPS, server)
+
+	grpcServer := grpc.NewGRPCServer(config, storage)
+
+	go grpcServer.Start()
 
 	<-ctx.Done()
 
@@ -91,6 +108,8 @@ func startHTTPServer(config config.Config, storage model.Storage) {
 			panic(err)
 		}
 	}
+
+	grpcServer.Stop()
 
 	zap.L().Info("Got interruption signal. Shutting down HTTP server gracefully...")
 	err := server.Shutdown(context.Background())

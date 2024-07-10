@@ -5,13 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
-	handler_err "github.com/avGenie/url-shortener/internal/app/handlers/errors"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	"go.uber.org/zap"
 )
@@ -77,11 +75,16 @@ func (h *DeleteHandler) DeleteUserURLHandler() http.HandlerFunc {
 			return
 		}
 
-		err := h.processDeletedURLs(userIDCtx.UserID, req.Body)
+		var batch models.ReqDeletedURLBatch
+		err := json.NewDecoder(req.Body).Decode(&batch)
 		if err != nil {
+			zap.L().Error("cannot process input user urls for deleting", zap.Error(err))
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		defer req.Body.Close()
+
+		h.ProcessDeletedURLs(userIDCtx.UserID, batch)
 
 		writer.WriteHeader(http.StatusAccepted)
 	}
@@ -164,15 +167,7 @@ func (h *DeleteHandler) flushDeletedURLs() {
 	}
 }
 
-func (h *DeleteHandler) processDeletedURLs(userID entity.UserID, reader io.ReadCloser) error {
-	var batch models.ReqDeletedURLBatch
-	err := json.NewDecoder(reader).Decode(&batch)
-	if err != nil {
-		zap.L().Error("cannot process input user urls for deleting", zap.Error(err))
-		return handler_err.ErrWrongDeletedURLFormat
-	}
-	defer reader.Close()
-
+func (h *DeleteHandler) ProcessDeletedURLs(userID entity.UserID, batch models.ReqDeletedURLBatch) {
 	resURLBatch := make([]entity.DeletedURL, 0, len(batch))
 	for _, url := range batch {
 		resURLBatch = append(resURLBatch, entity.DeletedURL{
@@ -182,6 +177,4 @@ func (h *DeleteHandler) processDeletedURLs(userID entity.UserID, reader io.ReadC
 	}
 
 	h.msgChan <- resURLBatch
-
-	return nil
 }
