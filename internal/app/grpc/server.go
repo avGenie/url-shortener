@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"fmt"
 	"log"
 	"net"
 
@@ -10,6 +9,7 @@ import (
 	handlers "github.com/avGenie/url-shortener/internal/app/handlers/delete"
 	storage_api "github.com/avGenie/url-shortener/internal/app/storage/api/model"
 	pb "github.com/avGenie/url-shortener/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -36,7 +36,7 @@ func NewGRPCServer(config config.Config, storage storage_api.Storage) *Shortener
 
 // Start Starts GRPC server
 func (s *ShortenerServer) Start() {
-	listen, err := net.Listen("tcp", ":8081")
+	listen, err := net.Listen("tcp", s.config.GRPCNetAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func (s *ShortenerServer) Start() {
 	// регистрируем сервис
 	pb.RegisterShortenerServer(s.server, s)
 
-	fmt.Println("Сервер gRPC начал работу")
+	zap.L().Info("Server gRPC starts", zap.String("address:", s.config.GRPCNetAddr))
 
 	if err := s.server.Serve(listen); err != nil {
 		log.Fatal(err)

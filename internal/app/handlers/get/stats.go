@@ -36,10 +36,19 @@ func StatsHandler(statGetter StatisticGetter, cidr *cidr.CIDR) http.HandlerFunc 
 			return
 		}
 
-		out, err := processServiceStatistic(req.Context(), statGetter)
+		stat, err := ProcessServiceStatistic(req.Context(), statGetter)
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
 
+			return
+		}
+
+		out, err := json.Marshal(stat)
+		if err != nil {
+			zap.L().Error("error while converting service statistic to output", zap.Error(err))
+
+			writer.WriteHeader(http.StatusInternalServerError)
+	
 			return
 		}
 
@@ -63,7 +72,7 @@ func processCIDR(req *http.Request, cidr *cidr.CIDR) error {
 	return nil
 }
 
-func processServiceStatistic(ctx context.Context, statGetter StatisticGetter) ([]byte, error) {
+func ProcessServiceStatistic(ctx context.Context, statGetter StatisticGetter) (models.CountStatistic, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -74,16 +83,8 @@ func processServiceStatistic(ctx context.Context, statGetter StatisticGetter) ([
 			zap.String("error", err.Error()),
 		)
 
-		return nil, err
+		return models.CountStatistic{}, err
 	}
 
-	out, err := json.Marshal(stat)
-	if err != nil {
-		errMsg := "error while converting service statistic to output"
-		zap.L().Error(errMsg, zap.Error(err))
-
-		return nil, fmt.Errorf("%s: %w", errMsg, err)
-	}
-
-	return out, nil
+	return stat, nil
 }

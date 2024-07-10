@@ -68,3 +68,11 @@ func DeleteRequestToReqDeletedURLBatch(request *pb.DeleteRequest) models.ReqDele
 
 	return output
 }
+
+// CountStatisticToStatisticResposne Converts model CountStatistic to proto StatisticResposne
+func CountStatisticToStatisticResposne(stat models.CountStatistic) *pb.StatisticResposne {
+	return &pb.StatisticResposne{
+		UrlsCount: int32(stat.URLCount),
+		UsersCount: int32(stat.UserCount),
+	}
+}

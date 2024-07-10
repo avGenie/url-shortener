@@ -49,10 +49,17 @@ message DeleteRequest {
     repeated DeleteObject urls = 1;
 }
 
+message StatisticResposne {
+    int32 urlsCount = 1;
+    int32 usersCount = 2;
+}
+
 service Shortener {
     rpc GetOriginalURL(ShortURL) returns (OriginalURL);
     rpc GetShortURL(OriginalURL) returns (ShortURL);
     rpc GetBatchShortURL(BatchRequest) returns (BatchResponse);
     rpc GetAllUserURL(google.protobuf.Empty) returns (AllUrlsResponse);
     rpc DeleteURLs(DeleteRequest) returns (google.protobuf.Empty);
+
+    rpc GetStatistic(google.protobuf.Empty) returns (StatisticResposne);
 }
