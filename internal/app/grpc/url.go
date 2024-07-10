@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/avGenie/url-shortener/internal/app/entity"
@@ -138,7 +137,33 @@ func (s *ShortenerServer) GetAllUserURL(ctx context.Context, _ *emptypb.Empty) (
 	}
 
 	urlsResponse := converter.AllURLsBatchToAllURLsResponse(batch)
-	fmt.Println(urlsResponse.Urls)
 
 	return urlsResponse, nil
+}
+
+// GetBatchShortURL Returns short URL by original batch of URLs and user id
+func (s *ShortenerServer) GetBatchShortURL(ctx context.Context, originalBatch *pb.BatchRequest) (*pb.BatchResponse, error) {
+	userID := grpc_context.GetUserIDFromContext(ctx)
+
+	if s.config.BaseURIPrefix == "" {
+		zap.L().Error(ErrEmptyBaseURIPrefixMsg)
+
+		return nil, status.Errorf(codes.Internal, ErrInternalMsg)
+	}
+
+	reqBatch := converter.BatchRequestToReqBatch(originalBatch)
+
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+
+	resBatch, err := post_handlers.BatchURLProcessing(s.storage, ctx, userID, reqBatch, s.config.BaseURIPrefix)
+	if err != nil {
+		zap.L().Error("error while batch url processing", zap.Error(err))
+
+		return nil, status.Errorf(codes.Internal, ErrInternalMsg)
+	}
+
+	outBatch := converter.ResBatchToBatchResponse(resBatch)
+
+	return outBatch, nil
 }

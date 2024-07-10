@@ -59,7 +59,35 @@ func grpcTest() {
 
 	// getOriginalGRPCURL(client, "be89c05e", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
 	// getShortURL(client, "https://www.google.com", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
-	getAllURLs(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
+	// getAllURLs(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
+
+	urls := []*pb.BatchOriginalURLObject{
+		{
+			CorrelationID: "google1",
+			OriginalURL: "https://google1.com/",
+		},
+		{
+			CorrelationID: "google2",
+			OriginalURL: "https://google2.com/",
+		},
+	}
+	getBatchShortURL(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97", &pb.BatchRequest{Urls: urls})
+}
+
+func getBatchShortURL(client shortener.ShortenerClient, userID string, req *pb.BatchRequest) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ctx = grpc_context.SetUserIDContext(ctx, entity.UserID(userID))
+
+	urls, err := client.GetBatchShortURL(ctx, req)
+	if err != nil {
+		zap.L().Error("getAllUserURL GetAllUserURL", zap.Error(err))
+
+		return
+	}
+
+	fmt.Println(urls)
 }
 
 func getAllURLs(client shortener.ShortenerClient, userID string) {

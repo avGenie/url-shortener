@@ -23,3 +23,37 @@ func AllURLsBatchToAllURLsResponse(batch models.AllUrlsBatch) *pb.AllUrlsRespons
 		Urls: urlsResponse,
 	}
 }
+
+// BatchRequestToReqBatch Converts proto BatchRequest to model ReqBatch struct
+func BatchRequestToReqBatch(request *pb.BatchRequest) models.ReqBatch {
+	outBatch := make(models.ReqBatch, 0, len(request.Urls))
+
+	for _, val := range request.Urls {
+		batch := models.BatchObjectRequest{
+			ID: val.CorrelationID,
+			URL: val.OriginalURL,
+		}
+
+		outBatch = append(outBatch, batch)
+	}
+
+	return outBatch
+}
+
+// ResBatchToBatchResponse Converts model ResBatch struct to proto BatchResponse
+func ResBatchToBatchResponse(resBatch models.ResBatch) *pb.BatchResponse {
+	outBatch := make([]*pb.BatchShortURLObject, 0, len(resBatch))
+
+	for _, val := range resBatch {
+		batch := &pb.BatchShortURLObject{
+			CorrelationID: val.ID,
+			ShortURL: val.URL,
+		}
+
+		outBatch = append(outBatch, batch)
+	}
+
+	return &pb.BatchResponse{
+		Urls: outBatch,
+	}
+}

@@ -21,8 +21,27 @@ message AllUrlsResponse {
 	repeated UrlsResponse urls = 1;
 }
 
+message BatchOriginalURLObject {
+    string correlationID = 1;
+    string originalURL = 2;
+}
+
+message BatchShortURLObject {
+    string correlationID = 1;
+    string shortURL = 2;
+}
+
+message BatchRequest {
+    repeated BatchOriginalURLObject urls = 1;
+}
+
+message BatchResponse {
+    repeated BatchShortURLObject urls = 1;
+}
+
 service Shortener {
     rpc GetOriginalURL(ShortURL) returns (OriginalURL);
     rpc GetShortURL(OriginalURL) returns (ShortURL);
+    rpc GetBatchShortURL(BatchRequest) returns (BatchResponse);
     rpc GetAllUserURL(google.protobuf.Empty) returns (AllUrlsResponse);
 }

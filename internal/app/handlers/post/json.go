@@ -127,7 +127,7 @@ func JSONBatchHandler(saver URLBatchSaver, baseURIPrefix string) http.HandlerFun
 		ctx, cancel := context.WithTimeout(req.Context(), timeout)
 		defer cancel()
 
-		outBatch, err := batchURLProcessing(saver, ctx, userIDCtx.UserID, batch, baseURIPrefix)
+		outBatch, err := BatchURLProcessing(saver, ctx, userIDCtx.UserID, batch, baseURIPrefix)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
