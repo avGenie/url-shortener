@@ -17,11 +17,11 @@ import (
 type ShortenerServer struct {
 	pb.ShortenerServer
 
-	storage storage_api.Storage
-	config  config.Config
-
 	server        *grpc.Server
 	deleteHandler *handlers.DeleteHandler
+
+	storage storage_api.Storage
+	config  config.Config
 }
 
 // NewGRPCServer Creates new GRPC server

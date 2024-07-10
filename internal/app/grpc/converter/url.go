@@ -12,7 +12,7 @@ func AllURLsBatchToAllURLsResponse(batch models.AllUrlsBatch) *pb.AllUrlsRespons
 
 	for _, urls := range batch {
 		response := &pb.UrlsResponse{
-			ShortURL: urls.ShortURL,
+			ShortURL:    urls.ShortURL,
 			OriginalURL: urls.OriginalURL,
 		}
 
@@ -30,7 +30,7 @@ func BatchRequestToReqBatch(request *pb.BatchRequest) models.ReqBatch {
 
 	for _, val := range request.GetUrls() {
 		batch := models.BatchObjectRequest{
-			ID: val.GetCorrelationID(),
+			ID:  val.GetCorrelationID(),
 			URL: val.GetOriginalURL(),
 		}
 
@@ -47,7 +47,7 @@ func ResBatchToBatchResponse(resBatch models.ResBatch) *pb.BatchResponse {
 	for _, val := range resBatch {
 		batch := &pb.BatchShortURLObject{
 			CorrelationID: val.ID,
-			ShortURL: val.URL,
+			ShortURL:      val.URL,
 		}
 
 		outBatch = append(outBatch, batch)
@@ -72,7 +72,7 @@ func DeleteRequestToReqDeletedURLBatch(request *pb.DeleteRequest) models.ReqDele
 // CountStatisticToStatisticResposne Converts model CountStatistic to proto StatisticResposne
 func CountStatisticToStatisticResposne(stat models.CountStatistic) *pb.StatisticResposne {
 	return &pb.StatisticResposne{
-		UrlsCount: int32(stat.URLCount),
+		UrlsCount:  int32(stat.URLCount),
 		UsersCount: int32(stat.UserCount),
 	}
 }

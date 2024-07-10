@@ -7,11 +7,12 @@
 package url_shortener
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -22,11 +23,11 @@ const (
 )
 
 type OriginalURL struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OriginalURL) Reset() {
@@ -69,11 +70,11 @@ func (x *OriginalURL) GetUrl() string {
 }
 
 type ShortURL struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ShortURL) Reset() {
@@ -116,12 +117,12 @@ func (x *ShortURL) GetUrl() string {
 }
 
 type UrlsResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	ShortURL    string `protobuf:"bytes,1,opt,name=shortURL,proto3" json:"shortURL,omitempty"`
 	OriginalURL string `protobuf:"bytes,2,opt,name=originalURL,proto3" json:"originalURL,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UrlsResponse) Reset() {
@@ -171,11 +172,11 @@ func (x *UrlsResponse) GetOriginalURL() string {
 }
 
 type AllUrlsResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	Urls []*UrlsResponse `protobuf:"bytes,1,rep,name=urls,proto3" json:"urls,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AllUrlsResponse) Reset() {
@@ -218,12 +219,12 @@ func (x *AllUrlsResponse) GetUrls() []*UrlsResponse {
 }
 
 type BatchOriginalURLObject struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	CorrelationID string `protobuf:"bytes,1,opt,name=correlationID,proto3" json:"correlationID,omitempty"`
 	OriginalURL   string `protobuf:"bytes,2,opt,name=originalURL,proto3" json:"originalURL,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BatchOriginalURLObject) Reset() {
@@ -273,12 +274,12 @@ func (x *BatchOriginalURLObject) GetOriginalURL() string {
 }
 
 type BatchShortURLObject struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	CorrelationID string `protobuf:"bytes,1,opt,name=correlationID,proto3" json:"correlationID,omitempty"`
 	ShortURL      string `protobuf:"bytes,2,opt,name=shortURL,proto3" json:"shortURL,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BatchShortURLObject) Reset() {
@@ -328,11 +329,11 @@ func (x *BatchShortURLObject) GetShortURL() string {
 }
 
 type BatchRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	Urls []*BatchOriginalURLObject `protobuf:"bytes,1,rep,name=urls,proto3" json:"urls,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BatchRequest) Reset() {
@@ -375,11 +376,11 @@ func (x *BatchRequest) GetUrls() []*BatchOriginalURLObject {
 }
 
 type BatchResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	Urls []*BatchShortURLObject `protobuf:"bytes,1,rep,name=urls,proto3" json:"urls,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BatchResponse) Reset() {
@@ -422,11 +423,11 @@ func (x *BatchResponse) GetUrls() []*BatchShortURLObject {
 }
 
 type DeleteObject struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	ShortURL string `protobuf:"bytes,1,opt,name=shortURL,proto3" json:"shortURL,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteObject) Reset() {
@@ -469,11 +470,11 @@ func (x *DeleteObject) GetShortURL() string {
 }
 
 type DeleteRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
 	Urls []*DeleteObject `protobuf:"bytes,1,rep,name=urls,proto3" json:"urls,omitempty"`
+
+	state         protoimpl.MessageState
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteRequest) Reset() {
@@ -517,8 +518,8 @@ func (x *DeleteRequest) GetUrls() []*DeleteObject {
 
 type StatisticResposne struct {
 	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 
 	UrlsCount  int32 `protobuf:"varint,1,opt,name=urlsCount,proto3" json:"urlsCount,omitempty"`
 	UsersCount int32 `protobuf:"varint,2,opt,name=usersCount,proto3" json:"usersCount,omitempty"`

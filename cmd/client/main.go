@@ -22,7 +22,6 @@ import (
 	"github.com/avGenie/url-shortener/internal/app/logger"
 	"github.com/avGenie/url-shortener/internal/app/models"
 	pb "github.com/avGenie/url-shortener/proto"
-	shortener "github.com/avGenie/url-shortener/proto"
 )
 
 const (
@@ -45,7 +44,7 @@ func main() {
 
 	grpcTest(config)
 
-	// stressTestHTTP(config)
+	stressTestHTTP(config)
 }
 
 func grpcTest(config config.Config) {
@@ -57,39 +56,39 @@ func grpcTest(config config.Config) {
 
 	client := pb.NewShortenerClient(conn)
 
-	// getOriginalGRPCURL(client, "be89c05e", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
-	// getShortURL(client, "https://www.google.com", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
-	// getAllURLs(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
+	getOriginalGRPCURL(client, "be89c05e", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
+	getShortURL(client, "https://www.google.com", "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
+	getAllURLs(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
 
-	// urls := []*pb.BatchOriginalURLObject{
-	// 	{
-	// 		CorrelationID: "google1",
-	// 		OriginalURL: "https://google1.com/",
-	// 	},
-	// 	{
-	// 		CorrelationID: "google2",
-	// 		OriginalURL: "https://google2.com/",
-	// 	},
-	// }
-	// getBatchShortURL(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97", &pb.BatchRequest{Urls: urls})
+	urls := []*pb.BatchOriginalURLObject{
+		{
+			CorrelationID: "google1",
+			OriginalURL:   "https://google1.com/",
+		},
+		{
+			CorrelationID: "google2",
+			OriginalURL:   "https://google2.com/",
+		},
+	}
+	getBatchShortURL(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97", &pb.BatchRequest{Urls: urls})
 
-	// deleteURLs := []*pb.DeleteObject{
-	// 	{
-	// 		ShortURL: "42b3e75f",
-	// 	},
-	// 	{
-	// 		ShortURL: "77fca595",
-	// 	},
-	// 	{
-	// 		ShortURL: "ac6bb669",
-	// 	},
-	// }
-	// deleteShortURLs(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97", &pb.DeleteRequest{Urls: deleteURLs})
+	deleteURLs := []*pb.DeleteObject{
+		{
+			ShortURL: "42b3e75f",
+		},
+		{
+			ShortURL: "77fca595",
+		},
+		{
+			ShortURL: "ac6bb669",
+		},
+	}
+	deleteShortURLs(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97", &pb.DeleteRequest{Urls: deleteURLs})
 
 	getStatistic(client, "8c6c0dbc-22b8-4349-b33f-7204104bbd97")
 }
 
-func getStatistic(client shortener.ShortenerClient, userID string) {
+func getStatistic(client pb.ShortenerClient, userID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -105,7 +104,7 @@ func getStatistic(client shortener.ShortenerClient, userID string) {
 	fmt.Println(stat)
 }
 
-func deleteShortURLs(client shortener.ShortenerClient, userID string, request *pb.DeleteRequest) {
+func deleteShortURLs(client pb.ShortenerClient, userID string, request *pb.DeleteRequest) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -121,7 +120,7 @@ func deleteShortURLs(client shortener.ShortenerClient, userID string, request *p
 	fmt.Println("no errors while deleting")
 }
 
-func getBatchShortURL(client shortener.ShortenerClient, userID string, req *pb.BatchRequest) {
+func getBatchShortURL(client pb.ShortenerClient, userID string, req *pb.BatchRequest) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -137,7 +136,7 @@ func getBatchShortURL(client shortener.ShortenerClient, userID string, req *pb.B
 	fmt.Println(urls)
 }
 
-func getAllURLs(client shortener.ShortenerClient, userID string) {
+func getAllURLs(client pb.ShortenerClient, userID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -153,13 +152,13 @@ func getAllURLs(client shortener.ShortenerClient, userID string) {
 	fmt.Println(urls)
 }
 
-func getShortURL(client shortener.ShortenerClient, url, userID string) {
+func getShortURL(client pb.ShortenerClient, url, userID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	ctx = grpc_context.SetUserIDContext(ctx, entity.UserID(userID))
 
-	original, err := client.GetShortURL(ctx, &shortener.OriginalURL{Url: url})
+	original, err := client.GetShortURL(ctx, &pb.OriginalURL{Url: url})
 	if err != nil {
 		zap.L().Error("getShortURL GetShortURL", zap.Error(err))
 
@@ -169,13 +168,13 @@ func getShortURL(client shortener.ShortenerClient, url, userID string) {
 	fmt.Println(original)
 }
 
-func getOriginalGRPCURL(client shortener.ShortenerClient, url, userID string) {
+func getOriginalGRPCURL(client pb.ShortenerClient, url, userID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	ctx = grpc_context.SetUserIDContext(ctx, entity.UserID(userID))
 
-	original, err := client.GetOriginalURL(ctx, &shortener.ShortURL{Url: url})
+	original, err := client.GetOriginalURL(ctx, &pb.ShortURL{Url: url})
 	if err != nil {
 		zap.L().Error("getOriginalGRPCURL GetOriginalURL", zap.Error(err))
 

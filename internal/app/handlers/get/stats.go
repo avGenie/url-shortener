@@ -48,7 +48,7 @@ func StatsHandler(statGetter StatisticGetter, cidr *cidr.CIDR) http.HandlerFunc 
 			zap.L().Error("error while converting service statistic to output", zap.Error(err))
 
 			writer.WriteHeader(http.StatusInternalServerError)
-	
+
 			return
 		}
 

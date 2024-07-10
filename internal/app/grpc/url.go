@@ -181,6 +181,6 @@ func (s *ShortenerServer) DeleteURLs(ctx context.Context, request *pb.DeleteRequ
 	urlBatch := converter.DeleteRequestToReqDeletedURLBatch(request)
 
 	s.deleteHandler.ProcessDeletedURLs(userID, urlBatch)
-	
+
 	return &emptypb.Empty{}, nil
 }
