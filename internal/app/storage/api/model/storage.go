@@ -18,6 +18,7 @@ type Storage interface {
 
 	GetURL(ctx context.Context, userID entity.UserID, key entity.URL) (*entity.URL, error)
 	GetAllURLByUserID(ctx context.Context, userID entity.UserID) (models.AllUrlsBatch, error)
+	GetStatistic(ctx context.Context) (models.CountStatistic, error)
 
 	DeleteBatchURL(ctx context.Context, urls entity.DeletedURLBatch) error
 }
